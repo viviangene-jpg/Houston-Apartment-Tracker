@@ -3,111 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Houston Apartment Tracker</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>HTX Apartment Tracker</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
     <style>
-input, select, .btn-log {
-    font-size: 16px !important; /* Prevents auto-zoom on iOS */
-}
+        :root { --primary: #1e3a8a; --accent: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --offer: #fef3c7; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding-top: 110px; }
 
-.data-card:active {
-    background-color: #f1f5f9; /* Visual feedback when tapped */
-    transform: scale(0.98);
-    transition: 0.1s;
-}
+        /* HEADER & TABS */
+        header { position: fixed; top: 0; left: 0; right: 0; background: white; z-index: 1000; border-bottom: 1px solid var(--border); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--primary); color: white; }
+        .top-bar h2 { margin: 0; font-size: 1rem; }
+        .btn-sheet { text-decoration: none; background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
 
-/* Make metrics easier to read on narrow screens */
-@media (max-width: 480px) {
-    .metrics-grid {
-        grid-template-columns: 1fr 1fr !important; /* Stack to 2 columns on small phones */
-    }
-}
-        :root { --primary: #1e3a8a; --success: #10b981; --bg: #f8fafc; --border: #cbd5e1; --danger: #ef4444; --offer: #fef3c7; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 15px; }
-        .container { max-width: 650px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-sheet { text-decoration: none; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 8px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+        .tabs { display: flex; height: 50px; background: white; }
+        .tab-btn { flex: 1; border: none; background: none; font-weight: 700; font-size: 0.85rem; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* LAYOUT */
+        .container { max-width: 650px; margin: auto; padding: 15px; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* CARDS & INPUTS */
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .section-title { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .section-title { font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full { grid-column: span 2; }
-        label { font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
-        input, select, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; background: white; }
+        label { font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: #475569; display: block; }
+        input, select, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; width: 100%; background: white; }
         input:read-only { background: #f1f5f9; color: var(--primary); font-weight: bold; }
         .offer-highlight { background: var(--offer) !important; border: 2px solid #f59e0b !important; color: #b45309 !important; }
-        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
-        .data-card { background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
+        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
+
+        /* PIPELINE RESULTS */
+        .data-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: #e2e8f0; margin-top: 5px; }
-        .details-hidden { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
-        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; }
+        .details-hidden { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; }
+        
+        .map-link { display: block; background: #eff6ff; color: var(--accent); text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 0.85rem; border: 1px solid #dbeafe; }
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.85rem; }
+        .target-box { grid-column: span 2; background: #fef3c7; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #fde68a; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h2 style="margin:0;">Houston Apartment Tracker</h2>
-        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?pli=1&gid=0#gid=0="_blank" class="btn-sheet">Google Sheet ↗</a>
-    </div>
+    <header>
+        <div class="top-bar">
+            <h2>HTX Apartment Tracker</h2>
+            <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?gid=0#gid=0" target="_blank" class="btn-sheet">VIEW SHEET ↗</a>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-underwrite" onclick="switchTab('underwrite')">TRACKING</button>
+            <button class="tab-btn" id="btn-pipeline" onclick="switchTab('pipeline')">INVENTORY</button>
+        </div>
+    </header>
 
-    <div class="card">
-        <div class="section-title">Property Identification</div>
-        <div class="grid">
-            <div class="full"><label>Property Name / Search</label><input type="text" id="autocomplete" placeholder="Type name or street..."></div>
-            <div class="full"><label>Verified Address</label><input type="text" id="address" readonly><input type="hidden" id="zipCode"></div>
-            <div class="input-group"><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
-            <div class="input-group">
-                <label>Status</label>
-                <select id="status">
-                    <option value="Interested">Interested</option>
-                    <option value="Toured">Toured</option>
-                    <option value="Under Contract">Under Contract</option>
-                    <option value="Pass">Pass</option>
-                </select>
+    <div class="container">
+        <div id="underwrite" class="view active">
+            <div class="card">
+                <div class="section-title">Property Info</div>
+                <div class="grid">
+                    <div class="full"><label>Property Name / Search</label><input type="text" id="autocomplete" placeholder="Search address..."></div>
+                    <div class="full"><label>Verified Address</label><input type="text" id="address" readonly></div>
+                    <div class="input-group"><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select id="status">
+                            <option>Interested</option><option>Toured</option><option>Under Contract</option><option>Pass</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-top:20px;">Financials</div>
+                <div class="grid">
+                    <div class="full"><label>Asking Price ($)</label><input type="text" id="price" class="currency-input" placeholder="$0"></div>
+                    <div class="input-group"><label>$/Unit</label><input type="text" id="pricePerUnit" readonly></div>
+                    <div class="input-group"><label>Calculated Cap</label><input type="text" id="currentCap" readonly></div>
+                    <div class="input-group"><label>Income (Annual)</label><input type="text" id="income" class="currency-input"></div>
+                    <div class="input-group"><label>Expense (Annual)</label><input type="text" id="expense" class="currency-input"></div>
+                    <div class="input-group"><label>NOI</label><input type="text" id="noi" readonly></div>
+                    <div class="input-group"><label>Target Cap %</label><input type="number" id="targetCap" value="7.0" step="0.1" oninput="calculate()"></div>
+                    <div class="full"><label>Target Offer Price</label><input type="text" id="targetOffer" readonly class="offer-highlight"></div>
+                    <div class="full"><label>Notes</label><textarea id="notes" rows="3"></textarea></div>
+                </div>
+                <button class="btn-log" onclick="sendData()" id="submitBtn">Save Deal to Pipeline</button>
             </div>
-            <div class="input-group">
-                <label>Class</label>
-                <select id="classType">
-                    <option value="A">Class A</option>
-                    <option value="B">Class B</option>
-                    <option value="C" selected>Class C</option>
-                    <option value="D">Class D</option>
-                </select>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px; padding-top: 15px;"><input type="checkbox" id="foreclosure" style="width: 20px; height: 20px;"><label for="foreclosure" style="margin:0;">Foreclosure?</label></div>
         </div>
 
-        <div class="section-title">Financials & Market Analysis</div>
-        <div class="grid">
-            <div class="input-group"><label>Asking Price ($)</label><input type="text" id="price" class="currency-input" placeholder="$0"></div>
-            <div class="input-group"><label>Price/Unit ($)</label><input type="text" id="pricePerUnit" readonly placeholder="$0"></div>
-            <div class="input-group"><label>Annual Income ($)</label><input type="text" id="income" class="currency-input" placeholder="$0"></div>
-            <div class="input-group"><label>Annual Expense ($)</label><input type="text" id="expense" class="currency-input" placeholder="$0"></div>
-            <div class="input-group"><label>Calculated NOI</label><input type="text" id="noi" readonly></div>
-            <div class="input-group"><label>Calculated Cap (%)</label><input type="text" id="currentCap" readonly></div>
-            <div class="input-group"><label>Implied Cap (Target %)</label><input type="number" id="targetCap" value="7.00" step="0.1" oninput="calculate()"></div>
-            <div class="full"><label>Target Offer Price (Based on Target %)</label><input type="text" id="targetOffer" readonly class="offer-highlight"></div>
+        <div id="pipeline" class="view">
+            <input type="text" id="dbSearch" placeholder="Search saved deals..." onkeyup="filterResults()" style="margin-bottom:15px;">
+            <div id="dbResults">Loading records...</div>
         </div>
-
-        <div class="section-title">Loan Analysis</div>
-        <div class="grid">
-            <div class="input-group"><label>Down %</label><input type="number" id="downPercent" value="25" oninput="calculate()"></div>
-            <div class="input-group"><label>Int. Rate (%)</label><input type="number" id="rate" value="6.75" step="0.01" oninput="calculate()"></div>
-            <div class="input-group"><label>DSCR</label><input type="text" id="dscr" readonly></div>
-            <div class="input-group"><label>Cash on Cash (%)</label><input type="text" id="coc" readonly></div>
-            <div class="full"><label>Notes</label><textarea id="notes"></textarea></div>
-        </div>
-        <button class="btn-log" onclick="sendData()" id="submitBtn">Log Deal to Sheet</button>
     </div>
-
-    <div class="section-title">Portfolio Pipeline</div>
-    <input type="text" id="dbSearch" placeholder="Search pipeline..." onkeyup="filterResults()" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
-    <div id="dbResults">Attempting to sync...</div>
-</div>
 
 <script>
+    // REPLACE WITH YOUR APPS SCRIPT WEB APP URL
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoDjG_Y5WwQH0sO5gcQeAGELbf4MOvNySmid0v0FYMh5J6Rb7V8c9BKVx7G-fRTvX0/exec'; 
     let dbData = [];
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        if(tabId === 'underwrite') document.getElementById('btn-underwrite').classList.add('active');
+        if(tabId === 'pipeline') {
+            document.getElementById('btn-pipeline').classList.add('active');
+            fetchDatabase();
+        }
+    }
 
     function formatCurr(val) {
         if (!val) return "$0";
@@ -117,13 +125,13 @@ input, select, .btn-log {
 
     function formatPct(val) {
         if (!val) return "0.00%";
-        let clean = val.toString().replace(/%/g, '');
-        return parseFloat(clean).toFixed(2) + "%";
+        let num = typeof val === 'string' ? parseFloat(val.replace(/%/g, '')) : val;
+        if (num > 0 && num < 1) num *= 100;
+        return num.toFixed(2) + "%";
     }
 
     function getRawNum(id) {
-        let val = document.getElementById(id).value;
-        return parseFloat(val.replace(/[$,]/g, "")) || 0;
+        return parseFloat(document.getElementById(id).value.replace(/[$,]/g, "")) || 0;
     }
 
     function maskCurrency(e) {
@@ -132,94 +140,60 @@ input, select, .btn-log {
         calculate(); 
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        ['price', 'income', 'expense'].forEach(id => {
-            document.getElementById(id).addEventListener('input', maskCurrency);
-        });
-        initAutocomplete();
-    });
-
     function calculate() {
         const p = getRawNum('price');
         const units = parseFloat(document.getElementById('units').value) || 0;
         const i = getRawNum('income');
         const e = getRawNum('expense');
-        const r = parseFloat(document.getElementById('rate').value) / 100 || 0;
-        const dp = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
-        const tCapPct = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
+        const tCap = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
         
         const noi = i - e;
-        const targetOffer = tCapPct > 0 ? (noi / tCapPct) : 0;
+        const targetOffer = tCap > 0 ? (noi / tCap) : 0;
         const currentCap = p > 0 ? (noi / p) * 100 : 0;
         const pUnit = (p > 0 && units > 0) ? p / units : 0;
-        const loan = p * (1 - dp);
-        
-        let annualDebt = 0;
-        if(loan > 0 && r > 0) {
-            const mR = r / 12, n = 360;
-            const mPmt = loan * (mR * Math.pow(1 + mR, n)) / (Math.pow(1 + mR, n) - 1);
-            annualDebt = mPmt * 12;
-        }
         
         document.getElementById('pricePerUnit').value = formatCurr(pUnit);
         document.getElementById('noi').value = formatCurr(noi);
         document.getElementById('currentCap').value = formatPct(currentCap);
         document.getElementById('targetOffer').value = formatCurr(targetOffer);
-        document.getElementById('dscr').value = annualDebt > 0 ? (noi / annualDebt).toFixed(2) : "";
-        document.getElementById('coc').value = (p * dp) > 0 ? (((noi - annualDebt) / (p * dp)) * 100).toFixed(2) + '%' : "";
     }
 
     async function fetchDatabase() {
+        const container = document.getElementById('dbResults');
+        container.innerHTML = "<div style='text-align:center; padding:20px;'>Syncing Pipeline...</div>";
         try {
-            const response = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`, {
-                method: 'GET',
-                redirect: 'follow'
-            });
-            dbData = await response.json();
+            const res = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`);
+            dbData = await res.json();
             renderResults(dbData);
-        } catch(e) { 
-            document.getElementById('dbResults').innerText = "Syncing Error: Check Permissions."; 
-        }
+        } catch(e) { container.innerHTML = "Sync Error. Check Deployment Access."; }
     }
 
     function renderResults(data) {
         const container = document.getElementById('dbResults');
         if (!data || data.length === 0) { container.innerHTML = "No properties found."; return; }
         
-        container.innerHTML = data.map((item, index) => {
-            const dateLogged = item.date ? new Date(item.date).toLocaleDateString() : 'No date';
+        container.innerHTML = data.reverse().map((item, index) => {
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`;
             return `
             <div class="data-card" onclick="toggleExpand(${index})">
-                <div style="display:flex; justify-content:space-between;">
-                    <div><b>${item.name || 'Unnamed'}</b><br><span class="badge">${item.status}</span></div>
-                    <div style="text-align:right;">
-                        <b style="color:var(--primary);">${formatCurr(item.price)}</b>
-                        <div style="font-size:0.7rem; color:#94a3b8;">${dateLogged}</div>
-                    </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${item.name || 'Deal'}</b><br><span class="badge">${item.status}</span></div>
+                    <div style="text-align:right;"><b>${formatCurr(item.price)}</b></div>
                 </div>
                 <div id="details-${index}" class="details-hidden">
-
-<div style="font-size: 0.9rem; margin-bottom: 12px; background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #dbeafe;">
-    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}" 
-       target="_blank" 
-       style="text-decoration: none; color: #1e40af; display: flex; align-items: center; gap: 8px;">
-        📍 <span style="font-weight: bold; border-bottom: 1px dashed #1e40af;">${item.address}</span>
-    </a>
-</div>
-
+                    <a href="${mapUrl}" target="_blank" class="map-link"></div>
+    📍 ${item.address || 'No Address Provided'}
+</a>
                     <div class="metrics-grid">
-                        <span>Units: <b>#${item.units || '0'}</b></span>
+                        <span>Units: <b>#${item.units || 0}</b></span>
                         <span>$/Unit: <b>${formatCurr(item.pricePerUnit)}</b></span>
-                        <span>Asking Cap: <b>${formatPct(parseFloat(item.cap) * 100)}</b></span>
+                        <span>Asking Cap: <b>${formatPct(item.cap)}</b></span>
                         <span>NOI: <b>${formatCurr(item.noi)}</b></span>
-                        <span>DSCR: <b>${item.dscr || 'N/A'}</b></span>
-                        <span>Class: <b>${item.classType || 'C'}</b></span>
-                        <span>Target Cap: <b>${formatPct(item.targetCap)}</b></span>
-                        <div style="grid-column: span 3; margin-top:5px; border-top:1px solid #cbd5e1; padding-top:5px;">
-                             Target Offer: <b style="color:#b45309;">${formatCurr(item.targetPrice)}</b>
-                        </div>
+                        <div class="target-box">Target Offer: <b>${formatCurr(item.targetPrice)}</b> (${formatPct(item.targetCap)})</div>
                     </div>
-                    <div style="margin-top:8px; font-size:0.75rem;"><b>Notes:</b> ${item.notes || 'N/A'}</div>
+                    <div style="margin-top:10px; font-size:0.8rem; background:#f1f5f9; padding:8px; border-radius:6px;">
+                        <i>${item.notes || 'No notes.'}</i>
+                    </div>
                 </div>
             </div>`;
         }).join('');
@@ -230,11 +204,8 @@ input, select, .btn-log {
         const data = {
             name: document.getElementById('autocomplete').value,
             address: document.getElementById('address').value,
-            zip: document.getElementById('zipCode').value,
             units: document.getElementById('units').value,
             status: document.getElementById('status').value,
-            classType: document.getElementById('classType').value,
-            foreclosure: document.getElementById('foreclosure').checked,
             price: getRawNum('price'),
             pricePerUnit: document.getElementById('pricePerUnit').value,
             income: getRawNum('income'),
@@ -243,13 +214,11 @@ input, select, .btn-log {
             cap: document.getElementById('currentCap').value,
             targetCap: document.getElementById('targetCap').value,
             targetPrice: document.getElementById('targetOffer').value,
-            dscr: document.getElementById('dscr').value,
-            coc: document.getElementById('coc').value,
             notes: document.getElementById('notes').value
         };
-        btn.innerText = "Syncing...";
+        btn.innerText = "Saving...";
         await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-        alert("Success!");
+        alert("Deal Logged to Sheet!");
         location.reload();
     }
 
@@ -260,22 +229,23 @@ input, select, .btn-log {
 
     function filterResults() {
         const q = document.getElementById('dbSearch').value.toLowerCase();
-        const filtered = dbData.filter(d => (d.name+d.status+d.address).toLowerCase().includes(q));
-        renderResults(filtered);
+        renderResults(dbData.filter(d => (d.name + d.address).toLowerCase().includes(q)));
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        ['price', 'income', 'expense'].forEach(id => {
+            document.getElementById(id).addEventListener('input', maskCurrency);
+        });
+        initAutocomplete();
+    });
 
     function initAutocomplete() {
         const input = document.getElementById('autocomplete');
-        const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "us" }, types: ["geocode", "establishment"] });
+        const autocomplete = new google.maps.places.Autocomplete(input);
         autocomplete.addListener("place_changed", () => {
             const place = autocomplete.getPlace();
-            if (place.formatted_address) {
-                document.getElementById('address').value = place.formatted_address;
-                const zip = place.address_components.find(c => c.types.includes("postal_code"));
-                document.getElementById('zipCode').value = zip ? zip.long_name : "N/A";
-            }
+            document.getElementById('address').value = place.formatted_address || "";
         });
-        fetchDatabase();
     }
 </script>
 </body>

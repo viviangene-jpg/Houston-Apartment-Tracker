@@ -3,178 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Houston REI Underwriter</title>
+    <title>Houston Apartment Tracker</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
     <style>
         :root { --primary: #1e3a8a; --success: #10b981; --bg: #f8fafc; --border: #cbd5e1; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 15px; }
-        .container { max-width: 600px; margin: auto; }
+        .container { max-width: 650px; margin: auto; }
+        
+        /* Header & Button Styling */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-sheet { text-decoration: none; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+        .btn-sheet { text-decoration: none; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 8px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
+        .btn-sheet:hover { background: var(--primary); color: white; }
+
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .section-title { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full { grid-column: span 2; }
         .input-group { display: flex; flex-direction: column; }
         label { font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
-        input, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
-        textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+        input, select, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; background: white; }
         input:read-only { background: #f1f5f9; color: var(--primary); font-weight: bold; }
-        .result-box { background: #eff6ff !important; border-color: #bfdbfe !important; }
-        .success-box { background: #ecfdf5 !important; border-color: #10b981 !important; color: #065f46 !important; }
-        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; cursor: pointer; }
-        .map-link { font-size: 0.8rem; color: #3b82f6; text-decoration: none; margin-top: 5px; display: none; font-weight: 600; }
-        .pac-container { border-radius: 8px; border: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); font-family: inherit; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+        .checkbox-group input { width: 22px; height: 22px; cursor: pointer; }
+        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+        .data-card { background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 5px solid var(--primary); font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: #e2e8f0; margin-left: 5px; }
+        .badge-foreclosure { background: #fee2e2; color: #991b1b; }
+        .pac-container { border-radius: 8px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2 style="margin:0; font-size: 1.3rem;">REI Underwriter</h2>
-        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?gid=0#gid=0" target="_blank" class="btn-sheet">Database ↗</a>
+        <h2 style="margin:0; font-size: 1.4rem;">Houston Apartment Tracker</h2>
+        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?gid=0#gid=0" target="_blank" class="btn-sheet">View Sheet ↗</a>
     </div>
 
     <div class="card">
-        <div class="section-title">Property ID (GPS Biased)</div>
+        <div class="section-title">Property Identification</div>
         <div class="grid">
             <div class="full">
                 <label>Property Name / Search Address</label>
-                <input type="text" id="autocomplete" placeholder="Type property name or address...">
+                <input type="text" id="autocomplete" placeholder="Type name or street...">
             </div>
             <div class="full">
                 <label>Verified Official Address</label>
-                <input type="text" id="address" readonly placeholder="Select from dropdown to fill">
-                <a id="mapLink" class="map-link" target="_blank">📍 Open in Google Maps</a>
+                <input type="text" id="address" readonly placeholder="Auto-fills from dropdown">
+                <input type="hidden" id="zipCode">
+            </div>
+            <div class="input-group"><label>Units</label><input type="number" id="units"></div>
+            <div class="input-group">
+                <label>Class Type</label>
+                <select id="classType">
+                    <option value="A">Class A</option>
+                    <option value="B">Class B</option>
+                    <option value="C">Class C</option>
+<option value="D">Class D</option>
+                </select>
+            </div>
+            <div class="full checkbox-group">
+                <input type="checkbox" id="foreclosure">
+                <label for="foreclosure" style="font-size:0.9rem;">Foreclosure Property?</label>
             </div>
         </div>
 
-        <div class="section-title">Financial Data</div>
+        <div class="section-title">Financials</div>
         <div class="grid">
-            <div class="input-group"><label>Price ($)</label><input type="number" id="price" oninput="calculate()"></div>
-            <div class="input-group"><label># of Units</label><input type="number" id="units"></div>
+            <div class="input-group"><label>Purchase Price ($)</label><input type="number" id="price" oninput="calculate()"></div>
             <div class="input-group"><label>Annual Income ($)</label><input type="number" id="income" oninput="calculate()"></div>
             <div class="input-group"><label>Annual Expense ($)</label><input type="number" id="expense" oninput="calculate()"></div>
-            <div class="input-group"><label>NOI</label><input type="text" id="noi" class="result-box" readonly></div>
-            <div class="input-group"><label>Cap Rate (%)</label><input type="text" id="capRate" class="result-box" readonly></div>
+            <div class="input-group"><label>Calculated NOI</label><input type="text" id="noi" readonly></div>
         </div>
 
-        <div class="section-title">Loan & Analysis</div>
+        <div class="section-title">Loan Analysis</div>
         <div class="grid">
-            <div class="input-group"><label>Int. Rate (%)</label><input type="number" id="rate" value="6.75" step="0.01" oninput="calculate()"></div>
             <div class="input-group"><label>Downpayment %</label><input type="number" id="downPercent" value="25" oninput="calculate()"></div>
-            <div class="input-group"><label>DSCR</label><input type="text" id="dscr" class="result-box" readonly></div>
-            <div class="input-group"><label>Cash on Cash</label><input type="text" id="coc" class="success-box" readonly></div>
-            <div class="full">
-                <label>Underwriting Notes</label>
-                <textarea id="notes" placeholder="Condition, area notes, seller motivation..."></textarea>
-            </div>
+            <div class="input-group"><label>Loan Term (Yrs)</label><input type="number" id="term" value="30" oninput="calculate()"></div>
+            <div class="input-group"><label>Int. Rate (%)</label><input type="number" id="rate" value="6.75" step="0.01" oninput="calculate()"></div>
+            <div class="input-group"><label>Cap Rate (%)</label><input type="text" id="capRate" readonly></div>
+            <div class="input-group"><label>DSCR</label><input type="text" id="dscr" readonly></div>
+            <div class="input-group"><label>Cash on Cash</label><input type="text" id="coc" readonly style="background:#ecfdf5;"></div>
+            <div class="full"><label>Notes</label><textarea id="notes" placeholder="Condition, rehab estimates, etc."></textarea></div>
         </div>
-
-        <button class="btn-log" onclick="sendData()" id="submitBtn">Log to Google Sheets</button>
+        <button class="btn-log" onclick="sendData()" id="submitBtn">Save Deal to Sheet</button>
     </div>
+
+    <div class="section-title">Portfolio Search</div>
+    <input type="text" id="dbSearch" placeholder="Filter by Name, Zip, or Class..." onkeyup="filterResults()" style="margin-bottom:15px; padding:12px; border-radius:8px; border:1px solid #cbd5e1; width:100%;">
+    <div id="dbResults">Syncing with Google Sheets...</div>
 </div>
 
 <script>
-    // 3. SETTINGS: PASTE YOUR GOOGLE APPS SCRIPT URL HERE
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1lPFAnA5dVsXtAZKbrxXIXPM1Sj-7HRmM-NyxH1mN8-SJ7QGKrp0TI_L1e4tFdPBx/exec';
-    let autocomplete;
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAQhEVwEH92-rNL5FlgLrsERq3idzNAzuO_SagbnRjLhHjPB2oSQLtqSrqBisTnws6/exec';
+    let dbData = [];
 
     function initAutocomplete() {
-        // Use GPS to bias results to your current location (Houston)
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
                 setupAutocomplete(pos.coords.latitude, pos.coords.longitude);
-            }, () => setupAutocomplete(29.7604, -95.3698)); // Fallback to Houston Center
+            }, () => setupAutocomplete(29.7604, -95.3698));
         } else {
             setupAutocomplete(29.7604, -95.3698);
         }
+        fetchDatabase();
     }
 
     function setupAutocomplete(lat, lng) {
         const input = document.getElementById('autocomplete');
         const options = {
             componentRestrictions: { country: "us" },
-            fields: ["formatted_address", "geometry", "name"],
-            locationBias: { radius: 50000, center: { lat, lng } }, // 30-mile radius biasing
+            fields: ["formatted_address", "address_components", "geometry"],
+            locationBias: { radius: 50000, center: { lat, lng } },
             types: ["geocode", "establishment"]
         };
-
-        autocomplete = new google.maps.places.Autocomplete(input, options);
-        autocomplete.addListener("place_changed", onPlaceChanged);
-    }
-
-    function onPlaceChanged() {
-        const place = autocomplete.getPlace();
-        if (place.formatted_address) {
-            document.getElementById('address').value = place.formatted_address;
-            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.formatted_address)}`;
-            const linkTag = document.getElementById('mapLink');
-            linkTag.href = mapUrl;
-            linkTag.style.display = 'block';
-        }
+        const autocomplete = new google.maps.places.Autocomplete(input, options);
+        autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                document.getElementById('address').value = place.formatted_address;
+                const zip = place.address_components.find(c => c.types.includes("postal_code"));
+                document.getElementById('zipCode').value = zip ? zip.long_name : "N/A";
+            }
+        });
     }
 
     function calculate() {
-        const p = parseFloat(document.getElementById('price').value) || 0;
-        const i = parseFloat(document.getElementById('income').value) || 0;
-        const e = parseFloat(document.getElementById('expense').value) || 0;
-        const r = parseFloat(document.getElementById('rate').value) / 100 || 0;
-        const dPct = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
+        const price = parseFloat(document.getElementById('price').value) || 0;
+        const income = parseFloat(document.getElementById('income').value) || 0;
+        const expense = parseFloat(document.getElementById('expense').value) || 0;
+        const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+        const downPercent = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
+        const term = parseInt(document.getElementById('term').value) || 30;
 
-        const noi = i - e;
-        const cap = p > 0 ? (noi / p) * 100 : 0;
-        const downAmt = p * dPct;
-        const loan = p - downAmt;
+        const noi = income - expense;
+        const cap = price > 0 ? (noi / price) * 100 : 0;
+        const loan = price * (1 - downPercent);
 
         let annualDebt = 0;
-        if(loan > 0 && r > 0) {
-            const mR = r / 12;
-            const mPmt = loan * (mR * Math.pow(1 + mR, 360)) / (Math.pow(1 + mR, 360) - 1);
+        if(loan > 0 && rate > 0) {
+            const mR = rate / 12, n = term * 12;
+            const mPmt = loan * (mR * Math.pow(1 + mR, n)) / (Math.pow(1 + mR, n) - 1);
             annualDebt = mPmt * 12;
         }
 
-        document.getElementById('noi').value = p > 0 ? noi.toLocaleString() : "";
-        document.getElementById('capRate').value = p > 0 ? cap.toFixed(2) + '%' : "";
+        document.getElementById('noi').value = noi !== 0 ? Math.round(noi).toLocaleString() : "";
+        document.getElementById('capRate').value = price > 0 ? cap.toFixed(2) + '%' : "";
         document.getElementById('dscr').value = annualDebt > 0 ? (noi / annualDebt).toFixed(2) : "";
-        document.getElementById('coc').value = downAmt > 0 ? (((noi - annualDebt) / downAmt) * 100).toFixed(2) + '%' : "";
+        document.getElementById('coc').value = (price * downPercent) > 0 ? (((noi - annualDebt) / (price * downPercent)) * 100).toFixed(2) + '%' : "";
+    }
+
+    async function fetchDatabase() {
+        try {
+            const res = await fetch(SCRIPT_URL);
+            dbData = await res.json();
+            renderResults(dbData);
+        } catch(e) { document.getElementById('dbResults').innerText = "Link Google Script URL to view database."; }
+    }
+
+    function renderResults(data) {
+        const container = document.getElementById('dbResults');
+        container.innerHTML = data.map(item => `
+            <div class="data-card">
+                <b>${item.name}</b> <span class="badge">Class ${item.classType}</span>
+                ${item.foreclosure === "TRUE" || item.foreclosure === true ? '<span class="badge badge-foreclosure">FORECLOSURE</span>' : ''}
+                <div style="display:grid; grid-template-columns: 1fr 1fr; margin-top:8px; color:#64748b; gap:5px;">
+                    <span>📍 Zip: ${item.zip}</span> <span>💰 NOI: ${item.noi}</span>
+                    <span>📈 Cap: ${item.cap}</span> <span>💵 CoC: ${item.coc}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function filterResults() {
+        const q = document.getElementById('dbSearch').value.toLowerCase();
+        const filtered = dbData.filter(d => (d.name+d.zip+d.classType).toLowerCase().includes(q));
+        renderResults(filtered);
     }
 
     async function sendData() {
         const btn = document.getElementById('submitBtn');
         const data = {
-            name: document.getElementById('autocomplete').value || "",
-            address: document.getElementById('address').value || "",
-            mapUrl: document.getElementById('mapLink').href || "",
-            price: document.getElementById('price').value || "",
-            units: document.getElementById('units').value || "",
-            income: document.getElementById('income').value || "",
-            expense: document.getElementById('expense').value || "",
-            noi: document.getElementById('noi').value || "",
-            cap: document.getElementById('capRate').value || "",
-            dscr: document.getElementById('dscr').value || "",
-            coc: document.getElementById('coc').value || "",
-            notes: document.getElementById('notes').value || ""
+            name: document.getElementById('autocomplete').value,
+            address: document.getElementById('address').value,
+            zip: document.getElementById('zipCode').value,
+            units: document.getElementById('units').value,
+            classType: document.getElementById('classType').value,
+            foreclosure: document.getElementById('foreclosure').checked,
+            price: document.getElementById('price').value,
+            income: document.getElementById('income').value,
+            expense: document.getElementById('expense').value,
+            noi: document.getElementById('noi').value,
+            cap: document.getElementById('capRate').value,
+            dscr: document.getElementById('dscr').value,
+            coc: document.getElementById('coc').value,
+            notes: document.getElementById('notes').value
         };
-
-        if(!data.name) return alert("Please enter a property name or address.");
-
-        btn.innerText = "Syncing...";
-        btn.disabled = true;
-
+        btn.innerText = "Saving...";
         const blob = new Blob([JSON.stringify(data)], {type : 'text/plain'});
-        try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: blob });
-            alert("✓ Success! Logged to Sheet.");
-            location.reload();
-        } catch (err) {
-            alert("Connection error.");
-            btn.disabled = false;
-            btn.innerText = "Log to Google Sheets";
-        }
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: blob });
+        alert("Deal Saved!"); location.reload();
     }
-
-    google.maps.event.addDomListener(window, 'load', initAutocomplete);
+    window.onload = initAutocomplete;
 </script>
 </body>
 </html>

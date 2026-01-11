@@ -31,7 +31,7 @@
 <div class="container">
     <div class="header">
         <h2 style="margin:0;">Houston Apartment Tracker</h2>
-        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?pli=1&gid=0#gid=0" target="_blank" class="btn-sheet">Google Sheet ↗</a>
+        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?pli=1&gid=0#gid=0="_blank" class="btn-sheet">Google Sheet ↗</a>
     </div>
 
     <div class="card">
@@ -39,7 +39,7 @@
         <div class="grid">
             <div class="full"><label>Property Name / Search</label><input type="text" id="autocomplete" placeholder="Type name or street..."></div>
             <div class="full"><label>Verified Address</label><input type="text" id="address" readonly><input type="hidden" id="zipCode"></div>
-            <div class="input-group"><label>Units</label><input type="number" id="units"></div>
+            <div class="input-group"><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
             <div class="input-group">
                 <label>Status</label>
                 <select id="status">
@@ -63,12 +63,13 @@
 
         <div class="section-title">Financials & Market Analysis</div>
         <div class="grid">
-            <div class="input-group"><label>Asking Price ($)</label><input type="number" id="price" oninput="calculate()"></div>
-            <div class="input-group"><label>Annual Income ($)</label><input type="number" id="income" oninput="calculate()"></div>
-            <div class="input-group"><label>Annual Expense ($)</label><input type="number" id="expense" oninput="calculate()"></div>
+            <div class="input-group"><label>Asking Price ($)</label><input type="text" id="price" class="currency-input" placeholder="$0"></div>
+            <div class="input-group"><label>Price/Unit ($)</label><input type="text" id="pricePerUnit" readonly placeholder="$0"></div>
+            <div class="input-group"><label>Annual Income ($)</label><input type="text" id="income" class="currency-input" placeholder="$0"></div>
+            <div class="input-group"><label>Annual Expense ($)</label><input type="text" id="expense" class="currency-input" placeholder="$0"></div>
             <div class="input-group"><label>Calculated NOI</label><input type="text" id="noi" readonly></div>
             <div class="input-group"><label>Calculated Cap (%)</label><input type="text" id="currentCap" readonly></div>
-            <div class="input-group"><label>Implied Cap (Target %)</label><input type="number" id="targetCap" value="7" step="0.1" oninput="calculate()"></div>
+            <div class="input-group"><label>Implied Cap (Target %)</label><input type="number" id="targetCap" value="7.00" step="0.1" oninput="calculate()"></div>
             <div class="full"><label>Target Offer Price (Based on Target %)</label><input type="text" id="targetOffer" readonly class="offer-highlight"></div>
         </div>
 
@@ -89,8 +90,7 @@
 </div>
 
 <script>
-    // 1. MUST UPDATE THIS URL AFTER RE-DEPLOYING AS "ANYONE"
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuCFdA83LLIzoE8BG3uoPikyfvqtRiEUsSCHuku9GZsO3oe5k4astg9yavat4PeuNC/exec'; 
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoDjG_Y5WwQH0sO5gcQeAGELbf4MOvNySmid0v0FYMh5J6Rb7V8c9BKVx7G-fRTvX0/exec'; 
     let dbData = [];
 
     function formatCurr(val) {
@@ -105,9 +105,56 @@
         return parseFloat(clean).toFixed(2) + "%";
     }
 
+    function getRawNum(id) {
+        let val = document.getElementById(id).value;
+        return parseFloat(val.replace(/[$,]/g, "")) || 0;
+    }
+
+    function maskCurrency(e) {
+        let value = e.target.value.replace(/\D/g, ""); 
+        e.target.value = value ? "$" + Number(value).toLocaleString('en-US') : "";
+        calculate(); 
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        ['price', 'income', 'expense'].forEach(id => {
+            document.getElementById(id).addEventListener('input', maskCurrency);
+        });
+        initAutocomplete();
+    });
+
+    function calculate() {
+        const p = getRawNum('price');
+        const units = parseFloat(document.getElementById('units').value) || 0;
+        const i = getRawNum('income');
+        const e = getRawNum('expense');
+        const r = parseFloat(document.getElementById('rate').value) / 100 || 0;
+        const dp = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
+        const tCapPct = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
+        
+        const noi = i - e;
+        const targetOffer = tCapPct > 0 ? (noi / tCapPct) : 0;
+        const currentCap = p > 0 ? (noi / p) * 100 : 0;
+        const pUnit = (p > 0 && units > 0) ? p / units : 0;
+        const loan = p * (1 - dp);
+        
+        let annualDebt = 0;
+        if(loan > 0 && r > 0) {
+            const mR = r / 12, n = 360;
+            const mPmt = loan * (mR * Math.pow(1 + mR, n)) / (Math.pow(1 + mR, n) - 1);
+            annualDebt = mPmt * 12;
+        }
+        
+        document.getElementById('pricePerUnit').value = formatCurr(pUnit);
+        document.getElementById('noi').value = formatCurr(noi);
+        document.getElementById('currentCap').value = formatPct(currentCap);
+        document.getElementById('targetOffer').value = formatCurr(targetOffer);
+        document.getElementById('dscr').value = annualDebt > 0 ? (noi / annualDebt).toFixed(2) : "";
+        document.getElementById('coc').value = (p * dp) > 0 ? (((noi - annualDebt) / (p * dp)) * 100).toFixed(2) + '%' : "";
+    }
+
     async function fetchDatabase() {
         try {
-            // Added redirect handling and cache busting
             const response = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`, {
                 method: 'GET',
                 redirect: 'follow'
@@ -115,8 +162,7 @@
             dbData = await response.json();
             renderResults(dbData);
         } catch(e) { 
-            console.error(e);
-            document.getElementById('dbResults').innerText = "Syncing Error: Check Deployment Permissions."; 
+            document.getElementById('dbResults').innerText = "Syncing Error: Check Permissions."; 
         }
     }
 
@@ -139,46 +185,20 @@
                     <div style="font-size:0.8rem; margin-bottom:8px; color:#64748b;">📍 ${item.address}</div>
                     <div class="metrics-grid">
                         <span>Units: <b>#${item.units || '0'}</b></span>
+                        <span>$/Unit: <b>${formatCurr(item.pricePerUnit)}</b></span>
                         <span>Asking Cap: <b>${formatPct(item.cap)}</b></span>
                         <span>NOI: <b>${formatCurr(item.noi)}</b></span>
                         <span>DSCR: <b>${item.dscr || 'N/A'}</b></span>
                         <span>Class: <b>${item.classType || 'C'}</b></span>
-                        <span>Target Cap: <b>${formatPct(item.targetCap || '7')}</b></span>
+                        <span>Target Cap: <b>${formatPct(item.targetCap)}</b></span>
                         <div style="grid-column: span 3; margin-top:5px; border-top:1px solid #cbd5e1; padding-top:5px;">
-                             Target Price: <b style="color:#b45309;">${formatCurr(item.targetOffer)}</b>
+                             Target Offer: <b style="color:#b45309;">${formatCurr(item.targetPrice)}</b>
                         </div>
                     </div>
                     <div style="margin-top:8px; font-size:0.75rem;"><b>Notes:</b> ${item.notes || 'N/A'}</div>
                 </div>
             </div>`;
         }).join('');
-    }
-
-    function calculate() {
-        const p = parseFloat(document.getElementById('price').value) || 0;
-        const i = parseFloat(document.getElementById('income').value) || 0;
-        const e = parseFloat(document.getElementById('expense').value) || 0;
-        const r = parseFloat(document.getElementById('rate').value) / 100 || 0;
-        const dp = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
-        const tCap = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
-        
-        const noi = i - e;
-        const targetOffer = tCap > 0 ? (noi / tCap) : 0;
-        const currentCap = p > 0 ? (noi / p) * 100 : 0;
-        const loan = p * (1 - dp);
-        
-        let annualDebt = 0;
-        if(loan > 0 && r > 0) {
-            const mR = r / 12, n = 360;
-            const mPmt = loan * (mR * Math.pow(1 + mR, n)) / (Math.pow(1 + mR, n) - 1);
-            annualDebt = mPmt * 12;
-        }
-        
-        document.getElementById('noi').value = formatCurr(noi);
-        document.getElementById('currentCap').value = formatPct(currentCap);
-        document.getElementById('targetOffer').value = formatCurr(targetOffer);
-        document.getElementById('dscr').value = annualDebt > 0 ? (noi / annualDebt).toFixed(2) : "";
-        document.getElementById('coc').value = (p * dp) > 0 ? (((noi - annualDebt) / (p * dp)) * 100).toFixed(2) + '%' : "";
     }
 
     async function sendData() {
@@ -191,13 +211,14 @@
             status: document.getElementById('status').value,
             classType: document.getElementById('classType').value,
             foreclosure: document.getElementById('foreclosure').checked,
-            price: document.getElementById('price').value,
-            income: document.getElementById('income').value,
-            expense: document.getElementById('expense').value,
+            price: getRawNum('price'),
+            pricePerUnit: document.getElementById('pricePerUnit').value,
+            income: getRawNum('income'),
+            expense: getRawNum('expense'),
             noi: document.getElementById('noi').value,
             cap: document.getElementById('currentCap').value,
             targetCap: document.getElementById('targetCap').value,
-            targetOffer: document.getElementById('targetOffer').value,
+            targetPrice: document.getElementById('targetOffer').value,
             dscr: document.getElementById('dscr').value,
             coc: document.getElementById('coc').value,
             notes: document.getElementById('notes').value
@@ -232,7 +253,6 @@
         });
         fetchDatabase();
     }
-    window.onload = initAutocomplete;
 </script>
 </body>
 </html>

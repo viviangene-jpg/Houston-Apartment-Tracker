@@ -6,6 +6,22 @@
     <title>Houston Apartment Tracker</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
     <style>
+input, select, .btn-log {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+}
+
+.data-card:active {
+    background-color: #f1f5f9; /* Visual feedback when tapped */
+    transform: scale(0.98);
+    transition: 0.1s;
+}
+
+/* Make metrics easier to read on narrow screens */
+@media (max-width: 480px) {
+    .metrics-grid {
+        grid-template-columns: 1fr 1fr !important; /* Stack to 2 columns on small phones */
+    }
+}
         :root { --primary: #1e3a8a; --success: #10b981; --bg: #f8fafc; --border: #cbd5e1; --danger: #ef4444; --offer: #fef3c7; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 15px; }
         .container { max-width: 650px; margin: auto; }
@@ -182,13 +198,15 @@
                     </div>
                 </div>
                 <div id="details-${index}" class="details-hidden">
-                    <div style="font-size: 0.9rem; margin-bottom: 12px; background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #dbeafe;">
+
+<div style="font-size: 0.9rem; margin-bottom: 12px; background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #dbeafe;">
     <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}" 
        target="_blank" 
        style="text-decoration: none; color: #1e40af; display: flex; align-items: center; gap: 8px;">
         📍 <span style="font-weight: bold; border-bottom: 1px dashed #1e40af;">${item.address}</span>
     </a>
 </div>
+
                     <div class="metrics-grid">
                         <span>Units: <b>#${item.units || '0'}</b></span>
                         <span>$/Unit: <b>${formatCurr(item.pricePerUnit)}</b></span>
@@ -262,4 +280,3 @@
 </script>
 </body>
 </html>
-

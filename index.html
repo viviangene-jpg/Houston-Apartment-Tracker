@@ -94,10 +94,21 @@
             </div>
         </div>
 
-        <div id="pipeline" class="view">
-            <input type="text" id="dbSearch" placeholder="Search saved deals..." onkeyup="filterResults()" style="margin-bottom:15px;">
-            <div id="dbResults">Loading records...</div>
-        </div>
+<div id="pipeline" class="view">
+    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <input type="text" id="dbSearch" placeholder="Search..." onkeyup="filterAndSort()" style="flex: 2; margin-bottom: 0;">
+        <select id="sortBy" onchange="filterAndSort()" style="flex: 1.5; font-size: 0.8rem; padding: 8px;">
+            <option value="newest"selected>Newest</option>
+<option value="oldest">Oldest</option>
+            <option value="capHigh">Cap (High-Low)</option>
+            <option value="capLow">Cap (Low-High)</option>
+            <option value="pUnitLow">$/Unit (Low-High)</option>
+            <option value="pUnitHigh">$/Unit (High-Low)</option>
+            <option value="units">Units (High-Low)</option>
+        </select>
+    </div>
+    <div id="dbResults">Loading records...</div>
+</div>
     </div>
 
 <script>
@@ -158,21 +169,27 @@
         document.getElementById('targetOffer').value = formatCurr(targetOffer);
     }
 
-    async function fetchDatabase() {
-        const container = document.getElementById('dbResults');
-        container.innerHTML = "<div style='text-align:center; padding:20px;'>Syncing Pipeline...</div>";
-        try {
-            const res = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`);
-            dbData = await res.json();
-            renderResults(dbData);
-        } catch(e) { container.innerHTML = "Sync Error. Check Deployment Access."; }
+async function fetchDatabase() {
+    const container = document.getElementById('dbResults');
+    container.innerHTML = "<div style='text-align:center; padding:20px;'>Syncing Pipeline...</div>";
+    try {
+        const res = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`);
+        dbData = await res.json();
+        
+        // CHANGE THIS LINE: 
+        // Instead of renderResults(dbData), we call our filter/sort logic
+        filterAndSort(); 
+        
+    } catch(e) { 
+        container.innerHTML = "Sync Error. Check Deployment Access."; 
     }
+}
 
     function renderResults(data) {
         const container = document.getElementById('dbResults');
         if (!data || data.length === 0) { container.innerHTML = "No properties found."; return; }
         
-        container.innerHTML = data.reverse().map((item, index) => {
+        container.innerHTML = data.map((item, index) => {
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`;
             return `
             <div class="data-card" onclick="toggleExpand(${index})">
@@ -181,7 +198,7 @@
                     <div style="text-align:right;"><b>${formatCurr(item.price)}</b></div>
                 </div>
                 <div id="details-${index}" class="details-hidden">
-                    <a href="${mapUrl}" target="_blank" class="map-link"></div>
+<a href="${mapUrl}" target="_blank" class="map-link">
     📍 ${item.address || 'No Address Provided'}
 </a>
                     <div class="metrics-grid">
@@ -227,10 +244,44 @@
         el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 
-    function filterResults() {
-        const q = document.getElementById('dbSearch').value.toLowerCase();
-        renderResults(dbData.filter(d => (d.name + d.address).toLowerCase().includes(q)));
+function filterAndSort() {
+    const query = document.getElementById('dbSearch').value.toLowerCase();
+    const sortType = document.getElementById('sortBy').value;
+    
+    // 1. Filter the data based on search input
+    let filtered = dbData.filter(d => 
+        (d.name + d.address + d.status).toLowerCase().includes(query)
+    );
+
+    // 2. Apply Sorting Logic
+    if (sortType === 'newest') {
+        // Just reverse the natural sheet order to get the latest at top
+        renderResults([...filtered].reverse()); 
+        return; // Exit early so we don't apply other sorts
+    } 
+    
+    if (sortType === 'oldest') {
+        // Show in the natural order they were entered (Top to Bottom)
+        renderResults(filtered);
+        return;
     }
+
+    // 3. Metric-based Sorting (Cap Rate, $/Unit, etc.)
+    filtered.sort((a, b) => {
+        const getNum = (val) => parseFloat(String(val).replace(/[$,%]/g, "")) || 0;
+
+        switch (sortType) {
+            case 'capHigh': return getNum(b.cap) - getNum(a.cap);
+            case 'capLow':  return getNum(a.cap) - getNum(b.cap);
+            case 'pUnitLow': return getNum(a.pricePerUnit) - getNum(b.pricePerUnit);
+            case 'pUnitHigh': return getNum(b.pricePerUnit) - getNum(a.pricePerUnit);
+            case 'units': return getNum(b.units) - getNum(a.units);
+            default: return 0;
+        }
+    });
+
+    renderResults(filtered);
+}
 
     document.addEventListener('DOMContentLoaded', () => {
         ['price', 'income', 'expense'].forEach(id => {

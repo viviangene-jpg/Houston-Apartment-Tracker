@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Houston REI Underwriter</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
+    <style>
+        :root { --primary: #1e3a8a; --success: #10b981; --bg: #f8fafc; --border: #cbd5e1; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-sheet { text-decoration: none; background: white; color: var(--primary); border: 1px solid var(--primary); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .section-title { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .full { grid-column: span 2; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
+        input, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+        input:read-only { background: #f1f5f9; color: var(--primary); font-weight: bold; }
+        .result-box { background: #eff6ff !important; border-color: #bfdbfe !important; }
+        .success-box { background: #ecfdf5 !important; border-color: #10b981 !important; color: #065f46 !important; }
+        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; cursor: pointer; }
+        .map-link { font-size: 0.8rem; color: #3b82f6; text-decoration: none; margin-top: 5px; display: none; font-weight: 600; }
+        .pac-container { border-radius: 8px; border: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); font-family: inherit; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0; font-size: 1.3rem;">REI Underwriter</h2>
+        <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit?gid=0#gid=0" target="_blank" class="btn-sheet">Database ↗</a>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Property ID (GPS Biased)</div>
+        <div class="grid">
+            <div class="full">
+                <label>Property Name / Search Address</label>
+                <input type="text" id="autocomplete" placeholder="Type property name or address...">
+            </div>
+            <div class="full">
+                <label>Verified Official Address</label>
+                <input type="text" id="address" readonly placeholder="Select from dropdown to fill">
+                <a id="mapLink" class="map-link" target="_blank">📍 Open in Google Maps</a>
+            </div>
+        </div>
+
+        <div class="section-title">Financial Data</div>
+        <div class="grid">
+            <div class="input-group"><label>Price ($)</label><input type="number" id="price" oninput="calculate()"></div>
+            <div class="input-group"><label># of Units</label><input type="number" id="units"></div>
+            <div class="input-group"><label>Annual Income ($)</label><input type="number" id="income" oninput="calculate()"></div>
+            <div class="input-group"><label>Annual Expense ($)</label><input type="number" id="expense" oninput="calculate()"></div>
+            <div class="input-group"><label>NOI</label><input type="text" id="noi" class="result-box" readonly></div>
+            <div class="input-group"><label>Cap Rate (%)</label><input type="text" id="capRate" class="result-box" readonly></div>
+        </div>
+
+        <div class="section-title">Loan & Analysis</div>
+        <div class="grid">
+            <div class="input-group"><label>Int. Rate (%)</label><input type="number" id="rate" value="6.75" step="0.01" oninput="calculate()"></div>
+            <div class="input-group"><label>Downpayment %</label><input type="number" id="downPercent" value="25" oninput="calculate()"></div>
+            <div class="input-group"><label>DSCR</label><input type="text" id="dscr" class="result-box" readonly></div>
+            <div class="input-group"><label>Cash on Cash</label><input type="text" id="coc" class="success-box" readonly></div>
+            <div class="full">
+                <label>Underwriting Notes</label>
+                <textarea id="notes" placeholder="Condition, area notes, seller motivation..."></textarea>
+            </div>
+        </div>
+
+        <button class="btn-log" onclick="sendData()" id="submitBtn">Log to Google Sheets</button>
+    </div>
+</div>
+
+<script>
+    // 3. SETTINGS: PASTE YOUR GOOGLE APPS SCRIPT URL HERE
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1lPFAnA5dVsXtAZKbrxXIXPM1Sj-7HRmM-NyxH1mN8-SJ7QGKrp0TI_L1e4tFdPBx/exec';
+    let autocomplete;
+
+    function initAutocomplete() {
+        // Use GPS to bias results to your current location (Houston)
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                setupAutocomplete(pos.coords.latitude, pos.coords.longitude);
+            }, () => setupAutocomplete(29.7604, -95.3698)); // Fallback to Houston Center
+        } else {
+            setupAutocomplete(29.7604, -95.3698);
+        }
+    }
+
+    function setupAutocomplete(lat, lng) {
+        const input = document.getElementById('autocomplete');
+        const options = {
+            componentRestrictions: { country: "us" },
+            fields: ["formatted_address", "geometry", "name"],
+            locationBias: { radius: 50000, center: { lat, lng } }, // 30-mile radius biasing
+            types: ["geocode", "establishment"]
+        };
+
+        autocomplete = new google.maps.places.Autocomplete(input, options);
+        autocomplete.addListener("place_changed", onPlaceChanged);
+    }
+
+    function onPlaceChanged() {
+        const place = autocomplete.getPlace();
+        if (place.formatted_address) {
+            document.getElementById('address').value = place.formatted_address;
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.formatted_address)}`;
+            const linkTag = document.getElementById('mapLink');
+            linkTag.href = mapUrl;
+            linkTag.style.display = 'block';
+        }
+    }
+
+    function calculate() {
+        const p = parseFloat(document.getElementById('price').value) || 0;
+        const i = parseFloat(document.getElementById('income').value) || 0;
+        const e = parseFloat(document.getElementById('expense').value) || 0;
+        const r = parseFloat(document.getElementById('rate').value) / 100 || 0;
+        const dPct = parseFloat(document.getElementById('downPercent').value) / 100 || 0;
+
+        const noi = i - e;
+        const cap = p > 0 ? (noi / p) * 100 : 0;
+        const downAmt = p * dPct;
+        const loan = p - downAmt;
+
+        let annualDebt = 0;
+        if(loan > 0 && r > 0) {
+            const mR = r / 12;
+            const mPmt = loan * (mR * Math.pow(1 + mR, 360)) / (Math.pow(1 + mR, 360) - 1);
+            annualDebt = mPmt * 12;
+        }
+
+        document.getElementById('noi').value = p > 0 ? noi.toLocaleString() : "";
+        document.getElementById('capRate').value = p > 0 ? cap.toFixed(2) + '%' : "";
+        document.getElementById('dscr').value = annualDebt > 0 ? (noi / annualDebt).toFixed(2) : "";
+        document.getElementById('coc').value = downAmt > 0 ? (((noi - annualDebt) / downAmt) * 100).toFixed(2) + '%' : "";
+    }
+
+    async function sendData() {
+        const btn = document.getElementById('submitBtn');
+        const data = {
+            name: document.getElementById('autocomplete').value || "",
+            address: document.getElementById('address').value || "",
+            mapUrl: document.getElementById('mapLink').href || "",
+            price: document.getElementById('price').value || "",
+            units: document.getElementById('units').value || "",
+            income: document.getElementById('income').value || "",
+            expense: document.getElementById('expense').value || "",
+            noi: document.getElementById('noi').value || "",
+            cap: document.getElementById('capRate').value || "",
+            dscr: document.getElementById('dscr').value || "",
+            coc: document.getElementById('coc').value || "",
+            notes: document.getElementById('notes').value || ""
+        };
+
+        if(!data.name) return alert("Please enter a property name or address.");
+
+        btn.innerText = "Syncing...";
+        btn.disabled = true;
+
+        const blob = new Blob([JSON.stringify(data)], {type : 'text/plain'});
+        try {
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: blob });
+            alert("✓ Success! Logged to Sheet.");
+            location.reload();
+        } catch (err) {
+            alert("Connection error.");
+            btn.disabled = false;
+            btn.innerText = "Log to Google Sheets";
+        }
+    }
+
+    google.maps.event.addDomListener(window, 'load', initAutocomplete);
+</script>
+</body>
+</html>

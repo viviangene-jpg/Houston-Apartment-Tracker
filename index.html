@@ -186,7 +186,7 @@
                     <div class="metrics-grid">
                         <span>Units: <b>#${item.units || '0'}</b></span>
                         <span>$/Unit: <b>${formatCurr(item.pricePerUnit)}</b></span>
-                        <span>Asking Cap: <b>${formatPct(item.cap)}</b></span>
+                        <span>Asking Cap: <b>${formatPct(parseFloat(item.cap) * 100)}</b></span>
                         <span>NOI: <b>${formatCurr(item.noi)}</b></span>
                         <span>DSCR: <b>${item.dscr || 'N/A'}</b></span>
                         <span>Class: <b>${item.classType || 'C'}</b></span>

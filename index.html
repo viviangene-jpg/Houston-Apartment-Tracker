@@ -39,6 +39,22 @@
         .offer-highlight { background: var(--offer) !important; border: 2px solid #f59e0b !important; color: #b45309 !important; }
         .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
 
+/*button*/
+.btn-analyze {
+    width: 30%;
+    background: #f1f5f9;
+    color: var(--primary);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    margin-top: 10px;
+    cursor: pointer;
+}
+.btn-analyze:active {
+    background: #e2e8f0;
+}
         /* PIPELINE RESULTS */
         .data-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: #e2e8f0; margin-top: 5px; }
@@ -207,7 +223,10 @@ async function fetchDatabase() {
                         <span>Asking Cap: <b>${formatPct(item.cap)}</b></span>
                         <span>NOI: <b>${formatCurr(item.noi)}</b></span>
                         <div class="target-box">Target Offer: <b>${formatCurr(item.targetPrice)}</b> (${formatPct(item.targetCap)})</div>
-                    </div>
+<button class="btn-analyze" onclick="editDeal(${index}); event.stopPropagation();">
+    🔄 Edit
+</button>                    
+</div>
                     <div style="margin-top:10px; font-size:0.8rem; background:#f1f5f9; padding:8px; border-radius:6px;">
                         <i>${item.notes || 'No notes.'}</i>
                     </div>
@@ -298,6 +317,39 @@ function filterAndSort() {
             document.getElementById('address').value = place.formatted_address || "";
         });
     }
+
+function editDeal(index) {
+    // 1. Get the data for this specific deal
+    const deal = dbData[index];
+    
+    // 2. Fill the inputs in the "Tracking" tab
+    document.getElementById('autocomplete').value = deal.name || "";
+    document.getElementById('address').value = deal.address || "";
+    document.getElementById('units').value = deal.units || 0;
+    document.getElementById('status').value = deal.status || "Interested";
+    
+    // We use a helper to set currency values so the formatting stays correct
+    const setCurrency = (id, val) => {
+        const num = parseFloat(String(val).replace(/[$,]/g, "")) || 0;
+        document.getElementById(id).value = num ? "$" + num.toLocaleString('en-US') : "";
+    };
+
+    setCurrency('price', deal.price);
+    setCurrency('income', deal.income);
+    setCurrency('expense', deal.expense);
+    document.getElementById('targetCap').value = parseFloat(deal.targetCap) || 7.0;
+    document.getElementById('notes').value = deal.notes || "";
+
+    // 3. Trigger the math calculation to update NOI/Cap Rate
+    calculate();
+
+    // 4. Switch back to the Tracking tab automatically
+    switchTab('underwrite');
+    
+    // Optional: Scroll to top of the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 </script>
 </body>
 </html>

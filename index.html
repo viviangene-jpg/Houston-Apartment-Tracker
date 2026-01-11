@@ -3,340 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>HTX Apartment Tracker</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
     <style>
-        :root { --primary: #1e3a8a; --accent: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --offer: #fef3c7; }
+        :root { --primary: #1e3a8a; --accent: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --offer: #fef3c7; --alert: #dc2626; --success: #16a34a; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #1e293b; margin: 0; padding-top: 110px; }
-
-        /* HEADER & TABS */
-        header { position: fixed; top: 0; left: 0; right: 0; background: white; z-index: 1000; border-bottom: 1px solid var(--border); }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--primary); color: white; }
-        .top-bar h2 { margin: 0; font-size: 1rem; }
-        .btn-sheet { text-decoration: none; background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
-
-        .tabs { display: flex; height: 50px; background: white; }
-        .tab-btn { flex: 1; border: none; background: none; font-weight: 700; font-size: 0.85rem; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-top: 115px; }
+        header { position: fixed; top: 0; left: 0; right: 0; background: white; z-index: 2000; border-bottom: 1px solid var(--border); height: 100px; }
+        .top-bar { display: flex; justify-content: center; align-items: center; padding: 5px 15px; background: var(--primary); color: white; height: 45px; }
+        .top-bar h2 { margin: 0; font-size: 0.9rem; letter-spacing: 1px; }
+        .tabs { display: flex; height: 55px; background: white; }
+        .tab-btn { flex: 1; border: none; background: none; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.8rem; }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-        /* LAYOUT */
-        .container { max-width: 650px; margin: auto; padding: 15px; }
+        .container { max-width: 600px; margin: auto; padding: 5px 12px; }
         .view { display: none; }
         .view.active { display: block; }
-
-        /* CARDS & INPUTS */
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .section-title { font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; }
+        .section-title { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 3px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full { grid-column: span 2; }
-        label { font-size: 0.7rem; font-weight: 600; margin-bottom: 4px; color: #475569; display: block; }
-        input, select, textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; width: 100%; background: white; }
+        input, select, textarea { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; width: 100%; outline: none; background: #fff; }
+        label { font-size: 0.8rem; font-weight: 600; margin-bottom: 2px; color: #475569; display: block; }
+        .label-alert { color: var(--alert) !important; font-weight: 900; }
         input:read-only { background: #f1f5f9; color: var(--primary); font-weight: bold; }
-        .offer-highlight { background: var(--offer) !important; border: 2px solid #f59e0b !important; color: #b45309 !important; }
-        .btn-log { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
-
-        .status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .btn-analyze-sm { background: #e0e7ff; color: var(--primary); border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .btn-analyze-sm:active { background: #c7d2fe; }
-
-        /* PIPELINE RESULTS */
-        .data-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: #e2e8f0; }
-        .details-hidden { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; }
-        .map-link { display: block; background: #eff6ff; color: var(--accent); text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 0.85rem; border: 1px solid #dbeafe; }
-        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.85rem; }
-        .target-box { grid-column: span 2; background: #fef3c7; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #fde68a; margin-top: 5px; }
+        .search-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+        #searchInput { flex: 2; height: 38px; border-radius: 20px; padding: 0 15px; border: 1px solid var(--border); }
+        #sortSelect { flex: 1.2; height: 38px; border-radius: 20px; font-size: 11px; border: 1px solid var(--border); background: white; }
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 0.9rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-clear { background: #e2e8f0; color: #475569; }
+        .data-card { background: white; padding: 12px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+        .card-name { font-weight: 800; color: var(--primary); font-size: 1.05rem; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="top-bar">
-            <h2>HTX Apartment Tracker</h2>
-            <a href="https://docs.google.com/spreadsheets/d/14j7JJbnia5nlLhrF8grfooid8sMS0q_9kRQOczeaies/edit" target="_blank" class="btn-sheet">VIEW SHEET ↗</a>
-        </div>
-        <div class="tabs">
-            <button class="tab-btn active" id="btn-underwrite" onclick="switchTab('underwrite')">TRACKING</button>
-            <button class="tab-btn" id="btn-pipeline" onclick="switchTab('pipeline')">INVENTORY</button>
-        </div>
-    </header>
+<header>
+    <div class="top-bar"><h2>HTX APARTMENT TRACKER</h2></div>
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-underwrite" onclick="switchTab('underwrite')">TRACKING</button>
+        <button class="tab-btn" id="btn-pipeline" onclick="switchTab('pipeline')">INVENTORY</button>
+    </div>
+</header>
 
-    <div class="container">
-        <div id="underwrite" class="view active">
-            <div class="card">
-                <div class="section-title">Property Info</div>
-                <div class="grid">
-                    <div class="full"><label>Property Name / Search</label><input type="text" id="autocomplete" placeholder="Search address..."></div>
-                    <div class="full"><label>Verified Address</label><input type="text" id="address" readonly></div>
-                    <div><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
-                    <div>
-                        <label>Status</label>
-                        <select id="status">
-                            <option>Interested</option><option>Toured</option><option>LOI Submitted</option><option>Under Contract</option><option>Monitor</option><option>Pass</option>
-                        </select>
-                    </div>
+<div class="container">
+    <div id="underwrite" class="view active">
+        <div class="card">
+            <input type="hidden" id="rowId"> 
+            <div class="section-title">Property Info</div>
+            <div class="grid">
+                <div class="full">
+                    <label>Property Name / Search</label>
+                    <input type="text" id="autocomplete" placeholder="Property search..." autocomplete="off">
                 </div>
+                <div class="full"><label>Verified Address</label><input type="text" id="address" readonly></div>
+                <div><label>Zip Code</label><input type="text" id="zip" readonly></div>
+                <div><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
+                <div><label>Status</label>
+                    <select id="status"><option>Interested</option><option>Toured</option><option>LOI Submitted</option><option>Under Contract</option><option>Pass</option></select>
+                </div>
+                <div><label>Class</label>
+                    <select id="class"><option>A</option><option>B</option><option selected>C</option><option>D</option></select>
+                </div>
+                <div><label>Asking Price</label><input type="text" id="price" class="currency-input"></div>
+                <div style="display:flex; align-items:center; padding-top:15px;"><input type="checkbox" id="foreclosure" style="width:20px; height:20px; margin-right:5px;"><label style="margin:0;">Foreclosure</label></div>
+            </div>
 
-                <div class="section-title" style="margin-top:20px;">Financials</div>
-                <div class="grid">
-                    <div class="full"><label>Asking Price ($)</label><input type="text" id="price" class="currency-input" placeholder="$0"></div>
-                    <div><label>$/Unit</label><input type="text" id="pricePerUnit" readonly></div>
-                    <div><label>Calculated Cap</label><input type="text" id="currentCap" readonly></div>
-                    <div><label>Income (Annual)</label><input type="text" id="income" class="currency-input"></div>
-                    <div><label>Expense (Annual)</label><input type="text" id="expense" class="currency-input"></div>
-                    <div><label>Expense Ratio (alert when < 45%) </label><input type="text" id="expRatio" readonly placeholder="0%"></div>
-                    <div><label>NOI</label><input type="text" id="noi" readonly></div>
-                    <div><label>Target Cap %</label><input type="number" id="targetCap" value="7.0" step="0.1" oninput="calculate()"></div>
-                    <div class="full"><label>Target Offer Price</label><input type="text" id="targetOffer" readonly class="offer-highlight"></div>
-                    <div class="full"><label>Notes</label><textarea id="notes" rows="3"></textarea></div>
-                </div>
-                <button class="btn-log" onclick="sendData()" id="submitBtn">Save Deal to Pipeline</button>
+            <div class="section-title" style="margin-top:15px;">Calculated Metrics</div>
+            <div class="grid">
+                <div><label>$/Unit</label><input type="text" id="pricePerUnit" readonly></div>
+                <div><label id="lbl-askingCap">Asking Cap</label><input type="text" id="askingCap" readonly></div>
+                <div><label>Income</label><input type="text" id="income" class="currency-input"></div>
+                <div><label>Expense</label><input type="text" id="expense" class="currency-input"></div>
+                <div><label id="lbl-expRatio">Exp Ratio %</label><input type="text" id="expRatio" readonly></div>
+                <div><label>NOI</label><input type="text" id="noi" readonly></div>
+            </div>
+
+            <div class="section-title" style="margin-top:15px;">Finance & Offer</div>
+            <div class="grid">
+                <div><label>Target Cap %</label><input type="number" id="targetCap" value="7.0" step="0.1" oninput="calculate()"></div>
+                <div><label>Target Offer</label><input type="text" id="targetPrice" readonly style="background:var(--offer)"></div>
+                <div><label>Down %</label><input type="number" id="downPct" value="25" oninput="calculate()"></div>
+                <div><label>Down $</label><input type="text" id="downAmt" readonly></div>
+                <div><label>Rate %</label><input type="number" id="interestRate" value="6.5" step="0.1" oninput="calculate()"></div>
+                <div><label>Amort</label><input type="number" id="amortization" value="30" oninput="calculate()"></div>
+                <div><label id="lbl-coc">COC % (>5%)</label><input type="text" id="coc" readonly></div>
+                <div><label id="lbl-dscr">DSCR (>1.25)</label><input type="text" id="dscr" readonly></div>
+                <div class="full"><label>Notes</label><textarea id="notes" rows="2"></textarea></div>
+            </div>
+
+            <div style="margin-top:15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                <button class="btn btn-clear" onclick="clearForm()">CLEAR FORM</button>
+                <button class="btn btn-primary" onclick="handleSaveRequest()">SAVE DEAL</button>
             </div>
         </div>
+    </div>
 
-        <div id="pipeline" class="view">
-            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                <input type="text" id="dbSearch" placeholder="Search..." onkeyup="filterAndSort()" style="flex: 2; margin-bottom: 0;">
-                <select id="sortBy" onchange="filterAndSort()" style="flex: 1.5; font-size: 0.8rem; padding: 8px;">
-                    <option value="newest" selected>Newest</option>
-                    <option value="oldest">Oldest</option>
-                    <option value="capHigh">Cap (High-Low)</option>
-                    <option value="capLow">Cap (Low-High)</option>
-                    <option value="pUnitLow">$/Unit (Low-High)</option>
-                    <option value="pUnitHigh">$/Unit (High-Low)</option>
-                    <option value="units">Units (High-Low)</option>
-                </select>
-            </div>
-            <div id="dbResults">Loading records...</div>
+    <div id="pipeline" class="view">
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="Search..." onkeyup="processInventory()">
+            <select id="sortSelect" onchange="processInventory()">
+                <option value="newest" selected>Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="unitsHigh">Units (High-Low)</option>
+                <option value="unitsLow">Units (Low-High)</option>
+                <option value="capHigh">Cap Rate (High-Low)</option>
+                <option value="capLow">Cap Rate (Low-High)</option>
+                <option value="priceHigh">Price (High-Low)</option>
+                <option value="priceLow">Price (Low-High)</option>
+            </select>
         </div>
-<div id="saveModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; justify-content:center; align-items:center; padding: 20px;">
-    <div class="card" style="width:100%; max-width:400px; text-align:center; padding: 25px;">
-        <h3 style="margin-top:0; color:var(--primary);">Duplicate Found</h3>
-        <p id="modalMsg" style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;"></p>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <button onclick="executeSave('update')" style="background:var(--primary); color:white; padding:14px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">OVERWRITE Existing</button>
-            <button onclick="executeSave('new')" style="background:#e0e7ff; color:var(--primary); padding:14px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">SAVE AS NEW (Duplicate)</button>
-            <button onclick="closeModal()" style="background:none; color:#94a3b8; padding:10px; border:none; font-size: 0.85rem; cursor:pointer;">Cancel / Keep Editing</button>
-        </div>
+        <div id="dbResults">Loading records...</div>
     </div>
 </div>
-    </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzU-b5kxS_W2COGM78j9IAmcwgwrYBaMJPMrwUMyetsnihmBdXdkxTgJUmkWOGBr4M/exec'; 
-    let dbData = [];
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaUuW6AWOigpq0nRZ7AeTHhwPJzzZ-6Z02vbLpZfvWupLNaX21Ub_5fz9WhIJpdkLq/exec';
+    let inventoryData = [];
 
-    function switchTab(tabId) {
+    function switchTab(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        document.getElementById('btn-' + tabId).classList.add('active');
-        if(tabId === 'pipeline') fetchDatabase();
+        document.getElementById(id).classList.add('active');
+        document.getElementById('btn-' + id).classList.add('active');
+        if(id === 'pipeline') fetchDatabase();
     }
 
-    function formatCurr(val) {
-        if (!val) return "$0";
-        const num = typeof val === 'string' ? parseFloat(val.replace(/[$,]/g, '')) : val;
-        return isNaN(num) ? "$0" : "$" + Math.round(num).toLocaleString('en-US');
+    function clearForm() {
+        document.getElementById('rowId').value = "";
+        document.getElementById('autocomplete').value = "";
+        document.getElementById('address').value = "";
+        document.getElementById('zip').value = "";
+        document.getElementById('units').value = "";
+        document.getElementById('price').value = "";
+        document.getElementById('income').value = "";
+        document.getElementById('expense').value = "";
+        document.getElementById('notes').value = "";
+        document.getElementById('foreclosure').checked = false;
+        calculate();
+        window.scrollTo(0,0);
     }
 
-    function formatPct(val) {
-        if (!val) return "0.00%";
-        let num = typeof val === 'string' ? parseFloat(val.replace(/%/g, '')) : val;
-        if (num > 0 && num < 1) num *= 100;
-        return num.toFixed(2) + "%";
+    function formatCurr(v) { 
+        let val = typeof v === "string" ? v.replace(/[$,]/g, "") : v;
+        return "$" + Math.round(parseFloat(val) || 0).toLocaleString(); 
     }
-
-    function getRawNum(id) {
-        return parseFloat(document.getElementById(id).value.replace(/[$,]/g, "")) || 0;
-    }
-
-    function maskCurrency(e) {
-        let value = e.target.value.replace(/\D/g, ""); 
-        e.target.value = value ? "$" + Number(value).toLocaleString('en-US') : "";
-        calculate(); 
-    }
+    
+    function parseNum(v) { return parseFloat(String(v).replace(/[$,%]/g, "")) || 0; }
+    function getNum(id) { return parseNum(document.getElementById(id).value); }
 
     function calculate() {
-        const p = getRawNum('price'), units = parseFloat(document.getElementById('units').value) || 0;
-        const i = getRawNum('income'), e = getRawNum('expense'), tCap = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
-        const noi = i - e, ratio = i > 0 ? (e / i) * 100 : 0;
-        
-        const ratioField = document.getElementById('expRatio');
-        ratioField.value = ratio.toFixed(1) + "%";
-        ratioField.style.color = (ratio > 0 && ratio < 45) ? "red" : "var(--primary)";
-        ratioField.style.backgroundColor = (ratio > 0 && ratio < 45) ? "#fee2e2" : "#f1f5f9";
+        const p = getNum('price'), u = getNum('units'), i = getNum('income'), e = getNum('expense');
+        const tCap = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
+        const noi = i - e;
+        const targetOffer = tCap > 0 ? (noi / tCap) : 0;
+        const downPct = getNum('downPct') / 100;
+        const downAmt = targetOffer * downPct;
+        const loanAmt = targetOffer - downAmt;
+        const rate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+        const months = parseFloat(document.getElementById('amortization').value) * 12;
 
-        document.getElementById('pricePerUnit').value = formatCurr(units > 0 ? p / units : 0);
+        let dscrVal = 0, cocVal = 0;
+        if (loanAmt > 0 && rate > 0 && months > 0) {
+            const mPay = (loanAmt * rate) / (1 - Math.pow(1 + rate, -months));
+            const annualDebt = mPay * 12;
+            dscrVal = noi / annualDebt;
+            cocVal = ((noi - annualDebt) / downAmt) * 100;
+        }
+
+        document.getElementById('coc').value = cocVal.toFixed(2) + "%";
+        document.getElementById('dscr').value = dscrVal > 0 ? dscrVal.toFixed(2) : "0.00";
         document.getElementById('noi').value = formatCurr(noi);
-        document.getElementById('currentCap').value = formatPct(p > 0 ? (noi / p) * 100 : 0);
-        document.getElementById('targetOffer').value = formatCurr(tCap > 0 ? (noi / tCap) : 0);
+        document.getElementById('targetPrice').value = formatCurr(targetOffer);
+        document.getElementById('downAmt').value = formatCurr(downAmt);
+        document.getElementById('pricePerUnit').value = formatCurr(u > 0 ? p / u : 0);
+        document.getElementById('askingCap').value = (p > 0 ? (noi/p*100) : 0).toFixed(2) + "%";
+        document.getElementById('expRatio').value = (i > 0 ? (e/i*100) : 0).toFixed(1) + "%";
+
+        document.getElementById('lbl-coc').classList.toggle('label-alert', cocVal < 5 && cocVal !== 0);
+        document.getElementById('lbl-dscr').classList.toggle('label-alert', dscrVal < 1.25 && dscrVal !== 0);
+    }
+
+    async function handleSaveRequest() {
+        const mode = document.getElementById('rowId').value ? 'update' : 'new';
+        const payload = {
+            mode: mode,
+            rowId: document.getElementById('rowId').value,
+            name: document.getElementById('autocomplete').value,
+            address: document.getElementById('address').value,
+            zip: document.getElementById('zip').value,
+            units: document.getElementById('units').value,
+            status: document.getElementById('status').value,
+            class: document.getElementById('class').value,
+            price: document.getElementById('price').value,
+            foreclosure: document.getElementById('foreclosure').checked ? "YES" : "NO",
+            pricePerUnit: document.getElementById('pricePerUnit').value,
+            askingCap: document.getElementById('askingCap').value,
+            income: document.getElementById('income').value,
+            expense: document.getElementById('expense').value,
+            expRatio: document.getElementById('expRatio').value,
+            noi: document.getElementById('noi').value,
+            targetCap: document.getElementById('targetCap').value,
+            targetPrice: document.getElementById('targetPrice').value,
+            downPct: document.getElementById('downPct').value,
+            downAmt: document.getElementById('downAmt').value,
+            interestRate: document.getElementById('interestRate').value,
+            amortization: document.getElementById('amortization').value,
+            coc: document.getElementById('coc').value,
+            dscr: document.getElementById('dscr').value,
+            notes: document.getElementById('notes').value
+        };
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Success!");
+        location.reload();
     }
 
     async function fetchDatabase() {
-        const container = document.getElementById('dbResults');
-        container.innerHTML = "<div style='text-align:center; padding:20px;'>Syncing Pipeline...</div>";
         try {
             const res = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`);
-            dbData = await res.json();
-            filterAndSort(); 
-        } catch(e) { container.innerHTML = "Sync Error."; }
+            inventoryData = await res.json();
+            processInventory();
+        } catch (e) { document.getElementById('dbResults').innerText = "Load error."; }
     }
 
-function renderResults(data) {
-    const container = document.getElementById('dbResults');
-    if (!data || data.length === 0) { container.innerHTML = "No properties found."; return; }
-    
-    container.innerHTML = data.map((item) => {
-        // CRITICAL FIX: Find the actual index in the MASTER database
-        const masterIndex = dbData.findIndex(d => 
-            d.name === item.name && d.address === item.address
-        );
+    function processInventory() {
+        let data = [...inventoryData];
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const sort = document.getElementById('sortSelect').value;
+        if (q) data = data.filter(i => (i.name||'').toLowerCase().includes(q) || (i.zip||'').toString().includes(q) || (i.status||'').toLowerCase().includes(q));
         
-        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`;
-        
-        return `
-        <div class="data-card" onclick="toggleExpand(${masterIndex})">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div><b>${item.name || 'Deal'}</b></div>
-                <div style="text-align:right;"><b>${formatCurr(item.price)}</b></div>
-            </div>
-            <div class="status-row">
-                <span class="badge">${item.status}</span>
-                <button class="btn-analyze-sm" onclick="editDeal(${masterIndex}); event.stopPropagation();">Analyze 🔄</button>
-            </div>
-            <div id="details-${masterIndex}" class="details-hidden">
-                <a href="${mapUrl}" target="_blank" class="map-link">📍 ${item.address || 'No Address'}</a>
-                <div class="metrics-grid">
-                    <span>Units: <b>#${item.units || 0}</b></span>
-                    <span>Asking Cap: <b>${formatPct(item.cap)}</b></span>
-                    <div class="target-box">Target: <b>${formatCurr(item.targetPrice)}</b></div>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-let pendingData = null; // Holds data while user decides
-
-async function sendData() {
-    const propertyName = document.getElementById('autocomplete').value;
-    if (!propertyName) return alert("Please enter a Property Name.");
-
-    // Store data in a temporary variable
-    pendingData = {
-        name: propertyName,
-        address: document.getElementById('address').value,
-        units: document.getElementById('units').value,
-        status: document.getElementById('status').value,
-        price: getRawNum('price'),
-        pricePerUnit: document.getElementById('pricePerUnit').value,
-        income: getRawNum('income'),
-        expense: getRawNum('expense'),
-        noi: document.getElementById('noi').value,
-        cap: document.getElementById('currentCap').value,
-        targetCap: document.getElementById('targetCap').value,
-        targetPrice: document.getElementById('targetOffer').value,
-        notes: document.getElementById('notes').value
-    };
-
-    const exists = dbData.some(d => d.name.toLowerCase() === propertyName.toLowerCase());
-
-    if (exists) {
-        document.getElementById('modalMsg').innerText = `"${propertyName}" already exists in your pipeline.`;
-        document.getElementById('saveModal').style.display = 'flex';
-    } else {
-        executeSave('new'); // Save immediately if it's brand new
-    }
-}
-
-    function toggleExpand(id) {
-        const el = document.getElementById('details-' + id);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-    }
-
-    
-async function executeSave(mode) {
-    const btn = document.getElementById('submitBtn');
-    closeModal();
-    
-    pendingData.saveMode = mode;
-    btn.innerText = "Syncing...";
-    btn.disabled = true;
-
-    try {
-        await fetch(SCRIPT_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify(pendingData) 
+        data.sort((a, b) => {
+            const rowA = parseInt(a.rowid), rowB = parseInt(b.rowid);
+            if (sort === 'newest') return rowB - rowA;
+            if (sort === 'oldest') return rowA - rowB;
+            if (sort === 'unitsHigh') return parseNum(b.units) - parseNum(a.units);
+            if (sort === 'unitsLow') return parseNum(a.units) - parseNum(b.units);
+            if (sort === 'capHigh') return parseNum(b.askingcap) - parseNum(a.askingcap);
+            if (sort === 'capLow') return parseNum(a.askingcap) - parseNum(b.askingcap);
+            if (sort === 'priceHigh') return parseNum(b.price) - parseNum(a.price);
+            if (sort === 'priceLow') return parseNum(a.price) - parseNum(b.price);
+            return 0;
         });
-        alert(mode === 'update' ? "Record Overwritten!" : "New Version Saved!");
-        location.reload();
-    } catch (e) {
-        alert("Error saving data.");
-        btn.disabled = false;
-        btn.innerText = "Save Deal to Pipeline";
-    }
-}
-
-function closeModal() {
-    document.getElementById('saveModal').style.display = 'none';
-}
-
-function filterAndSort() {
-        const query = document.getElementById('dbSearch').value.toLowerCase();
-        const sortType = document.getElementById('sortBy').value;
-        let filtered = dbData.filter(d => (d.name + d.address + d.status).toLowerCase().includes(query));
-
-        if (sortType === 'newest') return renderResults([...filtered].reverse());
-        if (sortType === 'oldest') return renderResults(filtered);
-
-        filtered.sort((a, b) => {
-            const getNum = (val) => parseFloat(String(val).replace(/[$,%]/g, "")) || 0;
-            switch (sortType) {
-                case 'capHigh': return getNum(b.cap) - getNum(a.cap);
-                case 'capLow':  return getNum(a.cap) - getNum(b.cap);
-                case 'pUnitLow': return getNum(a.pricePerUnit) - getNum(b.pricePerUnit);
-                case 'pUnitHigh': return getNum(b.pricePerUnit) - getNum(a.pricePerUnit);
-                case 'units': return getNum(b.units) - getNum(a.units);
-                default: return 0;
-            }
-        });
-        renderResults(filtered);
+        renderInventory(data);
     }
 
-    function editDeal(index) {
-        const deal = dbData[index];
-        document.getElementById('autocomplete').value = deal.name || "";
-        document.getElementById('address').value = deal.address || "";
-        document.getElementById('units').value = deal.units || 0;
-        document.getElementById('status').value = deal.status || "Interested";
-        
-        const setCurrency = (id, val) => {
-            const num = parseFloat(String(val).replace(/[$,]/g, "")) || 0;
-            document.getElementById(id).value = num ? "$" + num.toLocaleString('en-US') : "";
-        };
-        setCurrency('price', deal.price);
-        setCurrency('income', deal.income);
-        setCurrency('expense', deal.expense);
-        document.getElementById('targetCap').value = parseFloat(deal.targetCap) || 7.0;
-        document.getElementById('notes').value = deal.notes || "";
-        calculate();
+    function renderInventory(data) {
+        document.getElementById('dbResults').innerHTML = data.map(item => `
+            <div class="data-card">
+                <div class="card-header"><span class="card-name">${item.name || 'N/A'}</span><span style="color:var(--success); font-weight:700;">${item.price}</span></div>
+                <div style="font-size:0.85rem; color:var(--accent); margin:4px 0;">📍 ${item.address}</div>
+                <div style="font-size:0.8rem; color:#475569;">${item.units} Units | COC: <b>${item.coc}</b> | DSCR: <b>${item.dscr}</b></div>
+                <button class="btn btn-primary" style="padding:6px; font-size:0.75rem; margin-top:8px;" onclick="startEditById(${item.rowid})">EDIT DATA</button>
+            </div>`).join('');
+    }
+
+    function startEditById(rowid) {
+        const item = inventoryData.find(i => i.rowid === rowid);
+        if (!item) return;
+        document.getElementById('rowId').value = item.rowid;
+        document.getElementById('autocomplete').value = item.name || "";
+        document.getElementById('address').value = item.address || "";
+        document.getElementById('zip').value = item.zip || "";
+        document.getElementById('units').value = item.units || "";
+        document.getElementById('status').value = item.status || "Interested";
+        document.getElementById('price').value = item.price;
+        document.getElementById('income').value = item.income;
+        document.getElementById('expense').value = item.expense;
+        document.getElementById('notes').value = item.notes || "";
+        document.getElementById('foreclosure').checked = (item.foreclosure === "YES");
         switchTab('underwrite');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        calculate();
+        window.scrollTo(0,0);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        ['price', 'income', 'expense'].forEach(id => document.getElementById(id).addEventListener('input', maskCurrency));
-        const autocomplete = new google.maps.places.Autocomplete(document.getElementById('autocomplete'));
-        autocomplete.addListener("place_changed", () => {
-            const place = autocomplete.getPlace();
-            document.getElementById('address').value = place.formatted_address || "";
+    document.querySelectorAll('.currency-input').forEach(el => {
+        el.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, "");
+            e.target.value = v ? "$" + Number(v).toLocaleString() : "";
+            calculate();
         });
     });
+
+    window.onload = () => { if(window.google) { /* Initialize Autocomplete logic here */ } };
 </script>
 </body>
 </html>

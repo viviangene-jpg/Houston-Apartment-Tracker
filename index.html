@@ -24,17 +24,14 @@
         .full { grid-column: span 2; }
         input, select, textarea { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; width: 100%; outline: none; background: #fff; }
         label { font-size: 0.8rem; font-weight: 600; margin-bottom: 2px; color: #475569; display: block; }
-        .label-alert { color: var(--alert) !important; font-weight: 900; }
         input:read-only { background: #f1f5f9; color: var(--primary); font-weight: bold; }
-        .search-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-        #searchInput { flex: 2; height: 38px; border-radius: 20px; padding: 0 15px; border: 1px solid var(--border); }
-        #sortSelect { flex: 1.2; height: 38px; border-radius: 20px; font-size: 11px; border: 1px solid var(--border); background: white; }
         .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 0.9rem; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-clear { background: #e2e8f0; color: #475569; }
         .data-card { background: white; padding: 12px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
         .card-name { font-weight: 800; color: var(--primary); font-size: 1.05rem; }
+        #loader { text-align: center; padding: 20px; color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,77 +48,83 @@
     <div id="underwrite" class="view active">
         <div class="card">
             <input type="hidden" id="rowId"> 
-            <div class="section-title">Property Info</div>
+            
+            <div class="section-title">Property Info (Cols A-H)</div>
             <div class="grid">
-                <div class="full">
-                    <label>Property Name / Search</label>
-                    <input type="text" id="autocomplete" placeholder="Property search..." autocomplete="off">
-                </div>
-                <div class="full"><label>Verified Address</label><input type="text" id="address" readonly></div>
-                <div><label>Zip Code</label><input type="text" id="zip" readonly></div>
-                <div><label>Units</label><input type="number" id="units" oninput="calculate()"></div>
-                <div><label>Status</label>
+                <div class="full"><label>Property Name (A)</label><input type="text" id="name" placeholder="Search property name..."></div>
+                <div class="full"><label>Verified Address (B)</label><input type="text" id="address"></div>
+                <div><label>Zip Code (C)</label><input type="text" id="zip"></div>
+                <div><label>Units (D)</label><input type="number" id="units" oninput="calculate()"></div>
+                <div><label>Status (E)</label>
                     <select id="status"><option>Interested</option><option>Toured</option><option>LOI Submitted</option><option>Under Contract</option><option>Pass</option></select>
                 </div>
-                <div><label>Class</label>
+                <div><label>Class (F)</label>
                     <select id="class"><option>A</option><option>B</option><option selected>C</option><option>D</option></select>
                 </div>
-                <div><label>Asking Price</label><input type="text" id="price" class="currency-input"></div>
-                <div style="display:flex; align-items:center; padding-top:15px;"><input type="checkbox" id="foreclosure" style="width:20px; height:20px; margin-right:5px;"><label style="margin:0;">Foreclosure</label></div>
+                <div><label>Asking Price (G)</label><input type="text" id="price" class="currency-input"></div>
+                <div style="display:flex; align-items:center; padding-top:15px;">
+                    <input type="checkbox" id="foreclosure" style="width:20px; height:20px; margin-right:5px;">
+                    <label style="margin:0;">Foreclosure (H)</label>
+                </div>
             </div>
 
-            <div class="section-title" style="margin-top:15px;">Calculated Metrics</div>
+            <div class="section-title" style="margin-top:15px;">Calculated Metrics (Cols I-P)</div>
             <div class="grid">
-                <div><label>$/Unit</label><input type="text" id="pricePerUnit" readonly></div>
-                <div><label id="lbl-askingCap">Asking Cap</label><input type="text" id="askingCap" readonly></div>
-                <div><label>Income</label><input type="text" id="income" class="currency-input"></div>
-                <div><label>Expense</label><input type="text" id="expense" class="currency-input"></div>
-                <div><label id="lbl-expRatio">Exp Ratio %</label><input type="text" id="expRatio" readonly></div>
-                <div><label>NOI</label><input type="text" id="noi" readonly></div>
+                <div><label>$/Unit (I)</label><input type="text" id="priceperunit" readonly></div>
+                <div><label>Asking Cap (J)</label><input type="text" id="askingcap" readonly></div>
+                <div><label>Income (K)</label><input type="text" id="income" class="currency-input"></div>
+                <div><label>Expense (L)</label><input type="text" id="expense" class="currency-input"></div>
+                <div><label>Exp Ratio % (M)</label><input type="text" id="expratio" readonly></div>
+                <div><label>Annual NOI (P)</label><input type="text" id="noi" readonly></div>
             </div>
 
-            <div class="section-title" style="margin-top:15px;">Finance & Offer</div>
+            <div class="section-title" style="margin-top:15px;">Finance & Offer (Cols Q-X)</div>
             <div class="grid">
-                <div><label>Target Cap %</label><input type="number" id="targetCap" value="7.0" step="0.1" oninput="calculate()"></div>
-                <div><label>Target Offer</label><input type="text" id="targetPrice" readonly style="background:var(--offer)"></div>
-                <div><label>Down %</label><input type="number" id="downPct" value="25" oninput="calculate()"></div>
-                <div><label>Down $</label><input type="text" id="downAmt" readonly></div>
-                <div><label>Rate %</label><input type="number" id="interestRate" value="6.5" step="0.1" oninput="calculate()"></div>
-                <div><label>Amort</label><input type="number" id="amortization" value="30" oninput="calculate()"></div>
-                <div><label id="lbl-coc">COC % (>5%)</label><input type="text" id="coc" readonly></div>
-                <div><label id="lbl-dscr">DSCR (>1.25)</label><input type="text" id="dscr" readonly></div>
-                <div class="full"><label>Notes</label><textarea id="notes" rows="2"></textarea></div>
+                <div><label>Target Cap % (Q)</label><input type="number" id="targetcap" value="7.0" step="0.1" oninput="calculate()"></div>
+                <div><label>Target Offer (R)</label><input type="text" id="targetoffer" readonly style="background:var(--offer)"></div>
+                <div><label>Down % (S)</label><input type="number" id="downpct" value="25" oninput="calculate()"></div>
+                <div><label>Down $ (T)</label><input type="text" id="downamt" readonly></div>
+                
+                <div><label>COC % (U)</label><input type="text" id="coc" readonly style="background:#e0f2f1;"></div>
+                <div><label>DSCR (V)</label><input type="text" id="dscr" readonly style="background:#e0f2f1;"></div>
+                
+                <div><label>Interest Rate %</label><input type="number" id="interestrate" value="6.5" step="0.1" oninput="calculate()"></div>
+                <div><label>Amortization (Yrs)</label><input type="number" id="amort" value="30" oninput="calculate()"></div>
+                <div class="full"><label>Notes (W)</label><textarea id="notes" rows="2"></textarea></div>
+                <div class="full"><label>Timestamp (X - Auto)</label><input type="text" id="timestamp" readonly></div>
             </div>
 
             <div style="margin-top:15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
-                <button class="btn btn-clear" onclick="clearForm()">CLEAR FORM</button>
-                <button class="btn btn-primary" onclick="handleSaveRequest()">SAVE DEAL</button>
+                <button class="btn btn-clear" onclick="clearForm()">CLEAR</button>
+                <button class="btn btn-primary" id="saveBtn" onclick="handleSaveRequest()">SAVE DEAL</button>
             </div>
         </div>
     </div>
 
-    <div id="pipeline" class="view">
-        <div class="search-row">
-            <input type="text" id="searchInput" placeholder="Search..." onkeyup="processInventory()">
-            <select id="sortSelect" onchange="processInventory()">
-                <option value="newest" selected>Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="unitsHigh">Units (High-Low)</option>
-                <option value="unitsLow">Units (Low-High)</option>
-                <option value="capHigh">Cap Rate (High-Low)</option>
-                <option value="capLow">Cap Rate (Low-High)</option>
-                <option value="priceHigh">Price (High-Low)</option>
-                <option value="priceLow">Price (Low-High)</option>
-            </select>
-        </div>
-        <div id="dbResults">Loading records...</div>
+<div id="pipeline" class="view">
+    <div class="card" style="margin-bottom: 15px;">
+        <div class="section-title">Filter & Sort Inventory</div>
+        <input type="text" id="searchInput" placeholder="Search name or address..." oninput="filterAndRender()" style="margin-bottom:10px;">
+        <select id="sortInput" onchange="filterAndRender()">
+            <option value="newest" selected>Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="price_high">Price/Unit (High to Low)</option>
+            <option value="price_low">Price/Unit (Low to High)</option>
+            <option value="cap_high">Cap Rate (High to Low)</option>
+            <option value="cap_low">Cap Rate (Low to High)</option>
+        </select>
     </div>
+    <div id="loader" style="display:none;">Connecting to Sheet...</div>
+    <div id="dbResults"></div>
+</div>
 </div>
 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb9xYowAxAv2tjtihXxzQXSAuR_HaPTDQ&libraries=places"></script>
+
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaUuW6AWOigpq0nRZ7AeTHhwPJzzZ-6Z02vbLpZfvWupLNaX21Ub_5fz9WhIJpdkLq/exec';
     let inventoryData = [];
 
+    // --- NAVIGATION ---
     function switchTab(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -130,67 +133,78 @@
         if(id === 'pipeline') fetchDatabase();
     }
 
-    function clearForm() {
-        document.getElementById('rowId').value = "";
-        document.getElementById('autocomplete').value = "";
-        document.getElementById('address').value = "";
-        document.getElementById('zip').value = "";
-        document.getElementById('units').value = "";
-        document.getElementById('price').value = "";
-        document.getElementById('income').value = "";
-        document.getElementById('expense').value = "";
-        document.getElementById('notes').value = "";
-        document.getElementById('foreclosure').checked = false;
-        calculate();
-        window.scrollTo(0,0);
-    }
-
-    function formatCurr(v) { 
-        let val = typeof v === "string" ? v.replace(/[$,]/g, "") : v;
-        return "$" + Math.round(parseFloat(val) || 0).toLocaleString(); 
+    // --- CALCULATIONS ---
+    function parseNum(v) { return parseFloat(String(v).replace(/[$,%]/g, "")) || 0; }
+    function formatCurr(v) { return "$" + Math.round(v).toLocaleString(); }
+function formatPercent(v) {
+    if (!v || v === "0") return "0%";
+    
+    // Remove % if it exists and turn into a raw number
+    let num = parseFloat(String(v).replace(/[%]/g, ""));
+    
+    // If the number is a small decimal (less than 1, like 0.089), 
+    // multiply by 100 to get 8.9
+    if (num > 0 && num < 1) {
+        num = num * 100;
     }
     
-    function parseNum(v) { return parseFloat(String(v).replace(/[$,%]/g, "")) || 0; }
-    function getNum(id) { return parseNum(document.getElementById(id).value); }
+    // Return clean number (removes trailing .00) with % sign
+    return Number(num.toFixed(2)) + "%";
+}
+
+    // 2. Ensures money looks like $1,000,000
+    function formatCurrency(v) {
+        if (!v) return "$0";
+        let num = String(v).replace(/[$,]/g, "");
+        return "$" + Math.round(parseFloat(num) || 0).toLocaleString();
+    }
+
 
     function calculate() {
-        const p = getNum('price'), u = getNum('units'), i = getNum('income'), e = getNum('expense');
-        const tCap = parseFloat(document.getElementById('targetCap').value) / 100 || 0;
+        const p = parseNum(document.getElementById('price').value);
+        const u = parseNum(document.getElementById('units').value);
+        const i = parseNum(document.getElementById('income').value);
+        const e = parseNum(document.getElementById('expense').value);
+        const tCap = parseNum(document.getElementById('targetcap').value) / 100;
+        const downPct = parseNum(document.getElementById('downpct').value) / 100;
+        const rate = parseNum(document.getElementById('interestrate').value) / 100 / 12;
+        const months = parseNum(document.getElementById('amort').value) * 12;
+
         const noi = i - e;
         const targetOffer = tCap > 0 ? (noi / tCap) : 0;
-        const downPct = getNum('downPct') / 100;
         const downAmt = targetOffer * downPct;
         const loanAmt = targetOffer - downAmt;
-        const rate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
-        const months = parseFloat(document.getElementById('amortization').value) * 12;
 
-        let dscrVal = 0, cocVal = 0;
+        let dscr = 0, coc = 0;
         if (loanAmt > 0 && rate > 0 && months > 0) {
             const mPay = (loanAmt * rate) / (1 - Math.pow(1 + rate, -months));
             const annualDebt = mPay * 12;
-            dscrVal = noi / annualDebt;
-            cocVal = ((noi - annualDebt) / downAmt) * 100;
+            dscr = annualDebt > 0 ? (noi / annualDebt) : 0;
+            coc = downAmt > 0 ? ((noi - annualDebt) / downAmt) * 100 : 0;
         }
 
-        document.getElementById('coc').value = cocVal.toFixed(2) + "%";
-        document.getElementById('dscr').value = dscrVal > 0 ? dscrVal.toFixed(2) : "0.00";
         document.getElementById('noi').value = formatCurr(noi);
-        document.getElementById('targetPrice').value = formatCurr(targetOffer);
-        document.getElementById('downAmt').value = formatCurr(downAmt);
-        document.getElementById('pricePerUnit').value = formatCurr(u > 0 ? p / u : 0);
-        document.getElementById('askingCap').value = (p > 0 ? (noi/p*100) : 0).toFixed(2) + "%";
-        document.getElementById('expRatio').value = (i > 0 ? (e/i*100) : 0).toFixed(1) + "%";
-
-        document.getElementById('lbl-coc').classList.toggle('label-alert', cocVal < 5 && cocVal !== 0);
-        document.getElementById('lbl-dscr').classList.toggle('label-alert', dscrVal < 1.25 && dscrVal !== 0);
+        document.getElementById('targetoffer').value = formatCurr(targetOffer);
+        document.getElementById('downamt').value = formatCurr(downAmt);
+        document.getElementById('priceperunit').value = formatCurr(u > 0 ? p / u : 0);
+        document.getElementById('askingcap').value = (p > 0 ? (noi/p*100) : 0).toFixed(2) + "%";
+        document.getElementById('expratio').value = (i > 0 ? (e/i*100) : 0).toFixed(1) + "%";
+        document.getElementById('coc').value = coc.toFixed(2) + "%";
+        document.getElementById('dscr').value = dscr.toFixed(2);
+        
+        return { coc: coc.toFixed(2) + "%", dscr: dscr.toFixed(2) };
     }
 
-    async function handleSaveRequest() {
-        const mode = document.getElementById('rowId').value ? 'update' : 'new';
+    // --- SAVE LOGIC ---
+    function handleSaveRequest() {
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "SAVING...";
+        btn.disabled = true;
+
+        const calc = calculate();
         const payload = {
-            mode: mode,
-            rowId: document.getElementById('rowId').value,
-            name: document.getElementById('autocomplete').value,
+            rowid: document.getElementById('rowId').value,
+            name: document.getElementById('name').value,
             address: document.getElementById('address').value,
             zip: document.getElementById('zip').value,
             units: document.getElementById('units').value,
@@ -198,85 +212,141 @@
             class: document.getElementById('class').value,
             price: document.getElementById('price').value,
             foreclosure: document.getElementById('foreclosure').checked ? "YES" : "NO",
-            pricePerUnit: document.getElementById('pricePerUnit').value,
-            askingCap: document.getElementById('askingCap').value,
+            priceperunit: document.getElementById('priceperunit').value,
+            askingcap: document.getElementById('askingcap').value,
             income: document.getElementById('income').value,
             expense: document.getElementById('expense').value,
-            expRatio: document.getElementById('expRatio').value,
+            expratio: document.getElementById('expratio').value,
             noi: document.getElementById('noi').value,
-            targetCap: document.getElementById('targetCap').value,
-            targetPrice: document.getElementById('targetPrice').value,
-            downPct: document.getElementById('downPct').value,
-            downAmt: document.getElementById('downAmt').value,
-            interestRate: document.getElementById('interestRate').value,
-            amortization: document.getElementById('amortization').value,
-            coc: document.getElementById('coc').value,
-            dscr: document.getElementById('dscr').value,
-            notes: document.getElementById('notes').value
+            targetcap: document.getElementById('targetcap').value,
+            targetoffer: document.getElementById('targetoffer').value,
+            downpct: document.getElementById('downpct').value,
+            downamt: document.getElementById('downamt').value,
+            interestrate: document.getElementById('interestrate').value,
+            amortization: document.getElementById('amort').value,
+            coc: calc.coc,
+            dscr: calc.dscr,
+            notes: document.getElementById('notes').value,
+            timestamp: new Date().toLocaleString()
         };
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-        alert("Success!");
-        location.reload();
+
+        google.script.run
+            .withSuccessHandler(() => { alert("Saved!"); location.reload(); })
+            .withFailureHandler(err => { alert("Error: " + err); btn.disabled = false; btn.innerText = "SAVE DEAL"; })
+            .handleSaveRequest(payload);
     }
 
-    async function fetchDatabase() {
-        try {
-            const res = await fetch(`${SCRIPT_URL}?t=${new Date().getTime()}`);
-            inventoryData = await res.json();
-            processInventory();
-        } catch (e) { document.getElementById('dbResults').innerText = "Load error."; }
+    // --- INVENTORY & EDIT LOGIC ---
+// --- INVENTORY LOGIC ---
+    function fetchDatabase() {
+        document.getElementById('loader').style.display = "block";
+        google.script.run.withSuccessHandler((data) => {
+            inventoryData = JSON.parse(data);
+            document.getElementById('loader').style.display = "none";
+            // Forces the initial render to use the "newest" sort default
+            filterAndRender(); 
+        }).getInventoryJSON();
     }
 
-    function processInventory() {
-        let data = [...inventoryData];
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        const sort = document.getElementById('sortSelect').value;
-        if (q) data = data.filter(i => (i.name||'').toLowerCase().includes(q) || (i.zip||'').toString().includes(q) || (i.status||'').toLowerCase().includes(q));
-        
-        data.sort((a, b) => {
-            const rowA = parseInt(a.rowid), rowB = parseInt(b.rowid);
-            if (sort === 'newest') return rowB - rowA;
-            if (sort === 'oldest') return rowA - rowB;
-            if (sort === 'unitsHigh') return parseNum(b.units) - parseNum(a.units);
-            if (sort === 'unitsLow') return parseNum(a.units) - parseNum(b.units);
-            if (sort === 'capHigh') return parseNum(b.askingcap) - parseNum(a.askingcap);
-            if (sort === 'capLow') return parseNum(a.askingcap) - parseNum(b.askingcap);
-            if (sort === 'priceHigh') return parseNum(b.price) - parseNum(a.price);
-            if (sort === 'priceLow') return parseNum(a.price) - parseNum(b.price);
+    function filterAndRender() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const sortValue = document.getElementById('sortInput').value;
+
+        // 1. Filter Logic
+        let filtered = inventoryData.filter(item => {
+            return (item.name || "").toLowerCase().includes(searchTerm) || 
+                   (item.address || "").toLowerCase().includes(searchTerm);
+        });
+
+        // 2. Sort Logic
+        filtered.sort((a, b) => {
+            if (sortValue === "newest") return new Date(b.timestamp) - new Date(a.timestamp);
+            if (sortValue === "oldest") return new Date(a.timestamp) - new Date(b.timestamp);
+            
+            // Numerical sorting for Price and Cap Rate (strips symbols)
+            if (sortValue === "price_high") return parseNum(b.priceperunit) - parseNum(a.priceperunit);
+            if (sortValue === "price_low") return parseNum(a.priceperunit) - parseNum(b.priceperunit);
+            if (sortValue === "cap_high") return parseNum(b.askingcap) - parseNum(a.askingcap);
+            if (sortValue === "cap_low") return parseNum(a.askingcap) - parseNum(b.askingcap);
             return 0;
         });
-        renderInventory(data);
+
+        renderInventory(filtered);
     }
 
     function renderInventory(data) {
-        document.getElementById('dbResults').innerHTML = data.map(item => `
-            <div class="data-card">
-                <div class="card-header"><span class="card-name">${item.name || 'N/A'}</span><span style="color:var(--success); font-weight:700;">${item.price}</span></div>
-                <div style="font-size:0.85rem; color:var(--accent); margin:4px 0;">📍 ${item.address}</div>
-                <div style="font-size:0.8rem; color:#475569;">${item.units} Units | COC: <b>${item.coc}</b> | DSCR: <b>${item.dscr}</b></div>
-                <button class="btn btn-primary" style="padding:6px; font-size:0.75rem; margin-top:8px;" onclick="startEditById(${item.rowid})">EDIT DATA</button>
-            </div>`).join('');
+        let html = data.map(item => `
+            <div class="data-card" style="border-left: 5px solid ${item.status === 'Pass' ? '#dc2626' : 'var(--primary)'}">
+                <div class="card-header">
+                    <span class="card-name">${item.name || 'Unnamed Property'}</span>
+                    <span style="color:var(--success); font-weight:800;">${formatCurrency(item.price) || ''}</span>
+                </div>
+                <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">${item.address || ''}</div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.8rem; border: 1px solid #e2e8f0;">
+                    <div><span style="color:#64748b">Units:</span> <b>${item.units || '0'}</b></div>
+                    <div><span style="color:#64748b">Asking Cap:</span> <b>${formatPercent(item.askingcap)|| '0'}</b></div>
+                    <div><span style="color:#64748b">$/Unit:</span> <b>${formatCurrency(item.priceperunit) || '$0'}</b></div>
+                    <div><span style="color:#64748b">COC:</span> <b style="color:var(--success)">${formatPercent(item.coc) || '0%'}</b></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">Added: ${item.notes ? item.notes.split(',')[0] : 'N/A'}</span>
+                    <button class="btn btn-primary" style="padding:6px 15px; font-size:0.75rem; width: auto;" onclick="startEditById('${item.rowid}')">EDIT DEAL</button>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('dbResults').innerHTML = html || '<p style="text-align:center; padding:20px; color:#64748b;">No matching properties found.</p>';
     }
 
-    function startEditById(rowid) {
-        const item = inventoryData.find(i => i.rowid === rowid);
+    // THE FIX: Added all missing fields for 1-to-1 pulling
+    window.startEditById = function(rowid) {
+        const item = inventoryData.find(i => i.rowid == rowid);
         if (!item) return;
+
         document.getElementById('rowId').value = item.rowid;
-        document.getElementById('autocomplete').value = item.name || "";
+        document.getElementById('name').value = item.name || "";
         document.getElementById('address').value = item.address || "";
         document.getElementById('zip').value = item.zip || "";
         document.getElementById('units').value = item.units || "";
         document.getElementById('status').value = item.status || "Interested";
-        document.getElementById('price').value = item.price;
-        document.getElementById('income').value = item.income;
-        document.getElementById('expense').value = item.expense;
+        document.getElementById('class').value = item.class || "C";
+        document.getElementById('price').value = item.price || "";
+        document.getElementById('income').value = item.income || "";
+        document.getElementById('expense').value = item.expense || "";
+        document.getElementById('targetcap').value = item.targetcap || "7.0";
+        document.getElementById('downpct').value = item.downpct || "25";
+        document.getElementById('interestrate').value = item.interestrate || "6.5";
+        document.getElementById('amort').value = item.amortization || "30";
         document.getElementById('notes').value = item.notes || "";
         document.getElementById('foreclosure').checked = (item.foreclosure === "YES");
+        
         switchTab('underwrite');
-        calculate();
-        window.scrollTo(0,0);
+        calculate(); // This fills the read-only calculated fields automatically
+    };
+
+    // --- AUTOCOMPLETE FIX ---
+    function initAutocomplete() {
+        const input = document.getElementById('name');
+        if (!input) return;
+        const autocomplete = new google.maps.places.Autocomplete(input, { types: ['establishment', 'geocode'], componentRestrictions: {country: 'us'} });
+        
+        autocomplete.addListener('place_changed', function() {
+            const place = autocomplete.getPlace();
+            if (!place.geometry) return;
+            
+            document.getElementById('name').value = place.name || "";
+            document.getElementById('address').value = place.formatted_address || "";
+            
+            const zip = place.address_components.find(c => c.types.includes("postal_code"));
+            if (zip) document.getElementById('zip').value = zip.short_name;
+            
+            calculate();
+        });
     }
 
+    // Currency Formatting logic
     document.querySelectorAll('.currency-input').forEach(el => {
         el.addEventListener('input', (e) => {
             let v = e.target.value.replace(/\D/g, "");
@@ -285,7 +355,7 @@
         });
     });
 
-    window.onload = () => { if(window.google) { /* Initialize Autocomplete logic here */ } };
+    window.onload = initAutocomplete;
 </script>
 </body>
 </html>
